@@ -1,0 +1,133 @@
+// FANDX — the Fandom Exchange. Trade fictional characters across fandoms.
+// Pricing uses a bonding curve so buys push price up and sells push it down.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  cashBalance  Float    @default(10000)
+  createdAt    DateTime @default(now())
+
+  holdings  Holding[]
+  orders    Order[]
+  watchlist WatchlistItem[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  emoji       String
+  gradient    String // tailwind gradient classes, e.g. "from-violet-500 to-fuchsia-500"
+  blurb       String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  series Series[]
+}
+
+model Series {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  emoji      String
+  blurb      String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  stocks Stock[]
+
+  @@index([categoryId])
+}
+
+// A Stock is a tradeable character. Current price is stored and moves on every
+// trade (buy => up, sell => down) and on ambient market ticks.
+model Stock {
+  id          String  @id @default(cuid())
+  name        String
+  ticker      String  @unique
+  slug        String  @unique
+  blurb       String
+  emoji       String
+  gradient    String
+  price       Float // current price per share
+  basePrice   Float // IPO / anchor price (mean-reversion target)
+  liquidity   Float // higher => smaller price impact per share traded
+  floatShares Float // notional shares for market-cap display
+  sharesHeld  Float  @default(0) // shares currently held by all traders
+  volume      Float  @default(0) // lifetime traded notional
+  createdAt   DateTime @default(now())
+
+  seriesId String
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  holdings  Holding[]
+  orders    Order[]
+  watchlist WatchlistItem[]
+  prices    PricePoint[]
+
+  @@index([seriesId])
+}
+
+model PricePoint {
+  id        String   @id @default(cuid())
+  stockId   String
+  stock     Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  price     Float
+  timestamp DateTime @default(now())
+
+  @@index([stockId, timestamp])
+}
+
+model Holding {
+  id        String   @id @default(cuid())
+  userId    String
+  stockId   String
+  shares    Float    @default(0)
+  avgCost   Float    @default(0) // average cost basis per share
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stock     Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stockId])
+  @@index([userId])
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  userId    String
+  stockId   String
+  side      String // "BUY" | "SELL"
+  shares    Float
+  price     Float // average execution price per share
+  total     Float // total cash moved
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stock     Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([stockId, createdAt])
+}
+
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  stockId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stock     Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stockId])
+  @@index([userId])
+}
