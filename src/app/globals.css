@@ -62,7 +62,7 @@ body {
     @apply rounded-2xl border border-white/10 bg-white/[0.025] backdrop-blur-sm;
   }
   .card-hover {
-    @apply transition-all duration-200 hover:border-white/20 hover:bg-white/[0.05];
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05] hover:shadow-xl hover:shadow-black/40;
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-zinc-300 transition-colors;

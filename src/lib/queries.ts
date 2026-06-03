@@ -212,6 +212,30 @@ export async function getCategoryViews(): Promise<CategoryView[]> {
   }));
 }
 
+export type Investor = {
+  id: string;
+  username: string;
+  netWorth: number;
+};
+
+export async function getTopInvestors(limit = 3): Promise<Investor[]> {
+  const users = await prisma.user.findMany({
+    include: {
+      holdings: { include: { stock: { select: { price: true } } } },
+    },
+  });
+  return users
+    .map((u) => ({
+      id: u.id,
+      username: u.username,
+      netWorth:
+        u.cashBalance +
+        u.holdings.reduce((s, h) => s + h.shares * h.stock.price, 0),
+    }))
+    .sort((a, b) => b.netWorth - a.netWorth)
+    .slice(0, limit);
+}
+
 export type TapeItem = {
   ticker: string;
   emoji: string;

@@ -464,7 +464,47 @@ async function main() {
     });
   }
 
+  // A few bot traders so the leaderboard & podium look populated out of the box.
+  const BOTS: { email: string; username: string; cash: number; range: [number, number] }[] = [
+    { email: "ace@fandx.test", username: "ace_trader", cash: 50_000, range: [3, 10] },
+    { email: "kage@fandx.test", username: "kage", cash: 18_000, range: [12, 19] },
+    { email: "zenith@fandx.test", username: "zenith", cash: 32_000, range: [21, 28] },
+  ];
+  for (const b of BOTS) {
+    const user = await prisma.user.create({
+      data: {
+        email: b.email,
+        username: b.username,
+        passwordHash: await bcrypt.hash("demo1234", 10),
+        cashBalance: b.cash,
+      },
+    });
+    let botSpent = 0;
+    const span = b.range[1] - b.range[0];
+    for (let i = b.range[0]; i < b.range[1]; i++) {
+      const p = createdStocks[i];
+      if (!p) continue;
+      const target = (b.cash * 0.7) / span;
+      const shares = Math.max(1, Math.floor(target / p.price));
+      const cost = round2(shares * p.price);
+      if (botSpent + cost > b.cash * 0.95) break;
+      botSpent += cost;
+      await prisma.holding.create({
+        data: { userId: user.id, stockId: p.id, shares, avgCost: p.price },
+      });
+      await prisma.stock.update({
+        where: { id: p.id },
+        data: { sharesHeld: { increment: shares } },
+      });
+    }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { cashBalance: round2(b.cash - botSpent) },
+    });
+  }
+
   console.log("Seeded demo user: demo@fandx.test / demo1234");
+  console.log("Seeded 3 bot traders for the leaderboard.");
 }
 
 main()
