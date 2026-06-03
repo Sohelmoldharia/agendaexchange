@@ -155,6 +155,24 @@ export async function getSeriesPeers(
   return buildViews(stocks);
 }
 
+export async function getSeriesBySlug(slug: string) {
+  return prisma.series.findUnique({
+    where: { slug },
+    include: { category: true },
+  });
+}
+
+export async function getStockViewsBySeries(
+  slug: string,
+): Promise<StockView[]> {
+  const stocks = await prisma.stock.findMany({
+    where: { series: { slug } },
+    include: stockInclude,
+    orderBy: { name: "asc" },
+  });
+  return buildViews(stocks);
+}
+
 export async function getStockViewsByIds(ids: string[]): Promise<StockView[]> {
   if (ids.length === 0) return [];
   const stocks = await prisma.stock.findMany({

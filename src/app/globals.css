@@ -109,7 +109,7 @@ body {
   }
 }
 .marquee-track {
-  animation: marquee 50s linear infinite;
+  animation: marquee 150s linear infinite;
   will-change: transform;
 }
 .marquee-track:hover {
