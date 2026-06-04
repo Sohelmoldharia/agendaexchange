@@ -16,6 +16,7 @@ model User {
   username     String   @unique
   passwordHash String
   cashBalance  Float    @default(10000)
+  isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   holdings  Holding[]

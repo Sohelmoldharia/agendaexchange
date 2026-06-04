@@ -429,13 +429,15 @@ async function main() {
 
   console.log(`Created ${createdStocks.length} stocks.`);
 
-  // Demo account so people can explore immediately.
+  // Demo account so people can explore immediately. Also flagged as admin so
+  // you can poke at /admin without setting anything up.
   const demo = await prisma.user.create({
     data: {
       email: "demo@fandx.test",
       username: "demo",
       passwordHash: await bcrypt.hash("demo1234", 10),
       cashBalance: 25_000,
+      isAdmin: true,
     },
   });
 

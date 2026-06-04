@@ -71,3 +71,16 @@ export async function requireUser() {
   if (!user) redirect("/login");
   return user;
 }
+
+// For admin pages: requires a signed-in admin or kicks them home.
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (!user.isAdmin) redirect("/");
+  return user;
+}
+
+// For API admin routes — returns null instead of redirecting.
+export async function getCurrentAdmin() {
+  const user = await getCurrentUser();
+  return user?.isAdmin ? user : null;
+}

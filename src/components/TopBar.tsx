@@ -3,12 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, Wallet, X } from "lucide-react";
+import { LogOut, Menu, Shield, Wallet, X } from "lucide-react";
 import { Logo } from "./Logo";
 import { SearchBar, type SearchItem } from "./SearchBar";
 import { cn, formatMoney } from "@/lib/format";
 
-export type NavUser = { username: string; cashBalance: number } | null;
+export type NavUser = {
+  username: string;
+  cashBalance: number;
+  isAdmin: boolean;
+} | null;
 
 const LINKS = [
   { href: "/market", label: "Market" },
@@ -90,13 +94,26 @@ export function TopBar({ user, items }: { user: NavUser; items: SearchItem[] }) 
                 {user.username.slice(0, 1).toUpperCase()}
               </button>
               {userOpen && (
-                <div className="absolute right-0 top-12 w-48 overflow-hidden rounded-xl border border-white/10 bg-[#0e0d1a]/95 shadow-2xl backdrop-blur-xl">
+                <div className="absolute right-0 top-12 w-52 overflow-hidden rounded-xl border border-white/10 bg-[#0e0d1a]/95 shadow-2xl backdrop-blur-xl">
                   <div className="border-b border-white/10 px-4 py-3">
                     <div className="text-xs text-zinc-500">Signed in as</div>
                     <div className="truncate font-semibold text-white">
                       @{user.username}
                     </div>
+                    {user.isAdmin && (
+                      <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+                        <Shield className="h-3 w-3" /> Admin
+                      </div>
+                    )}
                   </div>
+                  {user.isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="flex w-full items-center gap-2 border-b border-white/10 px-4 py-2.5 text-left text-sm text-amber-300 hover:bg-amber-500/10"
+                    >
+                      <Shield className="h-4 w-4" /> Admin panel
+                    </Link>
+                  )}
                   <button
                     onClick={logout}
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-300 hover:bg-white/5"

@@ -25,7 +25,13 @@ export async function Nav() {
   return (
     <TopBar
       user={
-        user ? { username: user.username, cashBalance: user.cashBalance } : null
+        user
+          ? {
+              username: user.username,
+              cashBalance: user.cashBalance,
+              isAdmin: user.isAdmin,
+            }
+          : null
       }
       items={items}
     />
