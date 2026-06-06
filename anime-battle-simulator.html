@@ -532,10 +532,23 @@ function safeParseProfile(text, fallbackName, fallbackAnime){
 }
 
 async function scout(name, anime){
-  // 1) cache-first: instant + free if the character is in the roster DB
+  // 1) cache-first: instant + free if the character is already in the roster DB
   const hit = rosterLookup(name, anime);
   if(hit) return JSON.parse(JSON.stringify(hit));
-  // 2) fallback: ask the AI (costs a call; needs a configured provider)
+
+  // 2) backend proxy: key + limits live server-side, and it auto-caches new
+  //    characters into the DB forever. Used when deployed via server.js.
+  try{
+    const r = await fetch("/api/scout",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name,anime})});
+    if(r.ok) return await r.json();
+    if(r.status===429){ const e=await r.json().catch(()=>({})); throw new Error(e.error||"Scout limit reached — try a roster fighter."); }
+    // other backend statuses (404 = no backend / preview, 502 = AI error) fall through
+  }catch(err){
+    if(/limit/i.test(err.message||"")) throw err;   // surface the rate-limit message
+    /* no backend reachable (e.g. artifact preview) -> client-side fallback below */
+  }
+
+  // 3) client-side fallback: only for the preview / personal use with a key in settings
   const text = await callLLM(SYSTEM_PROMPT, buildPrompt(name,anime));
   return safeParseProfile(text, name, anime);
 }
