@@ -43,6 +43,35 @@
     return clamp(h * 0.16, 0, 0.85);
   }
 
+  // a single attack -> { dmg, type }  (negative dmg = a counter that hits the attacker). Pure: reads stats only.
+  function oneStrike(atk, def, turn, haxAtk) {
+    const a = atk.stats, d = def.stats;
+    const gambitChance = haxAtk * clamp(0.07 + a.intelligence / 1300, 0, 0.18);
+    if (haxAtk > 0 && Math.random() < gambitChance)
+      return { dmg: clamp(26 + a.technique * 0.22 + a.intelligence * 0.10 + gaussian(0, 6), 14, 75), type: "gambit" };
+    const decay = clamp(1 - turn * (1 - a.stamina / 100) * 0.010, 0.5, 1);
+    let boost = 0;
+    for (const w of (atk.wildcards || [])) if (Math.random() < w.trigger_chance) boost += w.stat_boost;
+    const power = clamp(a.power * decay + boost, 1, 130);
+    const tech = clamp(a.technique * decay + boost, 1, 130);
+    const dodge = clamp((d.speed - a.speed) / 420 + d.intelligence / 1100, 0, 0.32);
+    if (Math.random() < dodge) {
+      const counter = clamp(d.technique / 600 + d.intelligence / 1200, 0, 0.25);
+      if (Math.random() < counter) return { dmg: -clamp(d.power * 0.10, 1, 12), type: "counter" };
+      return { dmg: 0, type: "dodge" };
+    }
+    const offense = power * 0.55 + tech * 0.45;
+    let dmg = offense * 0.165, type = "hit";
+    if (Math.random() < clamp(tech / 420 + 0.03, 0, 0.30)) { dmg *= 1.7; type = "crit"; }
+    const exploit = clamp((a.intelligence - d.intelligence) / 640 + (a.technique - d.technique) / 900, 0, 0.12);
+    if (Math.random() < exploit) { dmg *= 1.8; if (type !== "crit") type = "exploit"; }
+    dmg *= clamp(1 + gaussian(0, 0.24 + (100 - a.intelligence) * 0.0018), 0.25, 2.2);
+    return { dmg: clamp(dmg, 1, 75), type };
+  }
+  const CONTROL = /time stop|stop time|time manip|rewind|seal|paraly|petrif|freeze|stasis|hypno|mind control|possess/;
+  const controlHax = C => CONTROL.test(haxText(C));
+  const ehp = c => 90 + c.stats.durability * 0.7 + c.stats.stamina * 0.1;
+
   const newCounts = () => ({ dmg: 0, hits: 0, crit: 0, gambit: 0, dodge: 0, counter: 0, first: 0 });
 
   // opts.trace -> include an `events` array. Always returns `counts` per side.
@@ -63,38 +92,11 @@
     const initA = sA.speed * 0.8 + sA.range * 0.2 + 5;
     const initB = sB.speed * 0.8 + sB.range * 0.2 + 5;
 
-    // -> { dmg, type }  (negative dmg = a counter that hits the attacker)
-    function strike(atk, def, turn, haxAtk) {
-      const a = atk.stats, d = def.stats;
-      const gambitChance = haxAtk * clamp(0.07 + a.intelligence / 1300, 0, 0.18);
-      if (haxAtk > 0 && Math.random() < gambitChance) {
-        gambits++;
-        return { dmg: clamp(26 + a.technique * 0.22 + a.intelligence * 0.10 + gaussian(0, 6), 14, 75), type: "gambit" };
-      }
-      const decay = clamp(1 - turn * (1 - a.stamina / 100) * 0.010, 0.5, 1);
-      let boost = 0;
-      for (const w of (atk.wildcards || [])) if (Math.random() < w.trigger_chance) boost += w.stat_boost;
-      const power = clamp(a.power * decay + boost, 1, 130);
-      const tech = clamp(a.technique * decay + boost, 1, 130);
-      const dodge = clamp((d.speed - a.speed) / 420 + d.intelligence / 1100, 0, 0.32);
-      if (Math.random() < dodge) {
-        const counter = clamp(d.technique / 600 + d.intelligence / 1200, 0, 0.25);
-        if (Math.random() < counter) return { dmg: -clamp(d.power * 0.10, 1, 12), type: "counter" };
-        return { dmg: 0, type: "dodge" };
-      }
-      const offense = power * 0.55 + tech * 0.45;
-      let dmg = offense * 0.165; let type = "hit";
-      if (Math.random() < clamp(tech / 420 + 0.03, 0, 0.30)) { dmg *= 1.7; type = "crit"; }
-      const exploit = clamp((a.intelligence - d.intelligence) / 640 + (a.technique - d.technique) / 900, 0, 0.12);
-      if (Math.random() < exploit) { dmg *= 1.8; if (type !== "crit") type = "exploit"; }
-      dmg *= clamp(1 + gaussian(0, 0.24 + (100 - a.intelligence) * 0.0018), 0.25, 2.2);
-      return { dmg: clamp(dmg, 1, 75), type };
-    }
-
     const hurt = (side, dmg) => { if (side === "f1") hpA -= dmg; else hpB -= dmg; };
 
     function apply(atk, def, atkSide, defSide, turn, haxAtk) {
-      const r = strike(atk, def, turn, haxAtk);
+      const r = oneStrike(atk, def, turn, haxAtk);
+      if (r.type === "gambit") gambits++;
       if (r.type === "dodge") counts[defSide].dodge++;
       if (r.dmg < 0) {                        // counter hits the attacker
         hurt(atkSide, -r.dmg);
@@ -109,7 +111,8 @@
       if (hpA <= 0 || hpB <= 0) return true;
       // faster attacker may follow up
       if (r.dmg >= 0 && Math.random() < clamp((atk.stats.speed - def.stats.speed) / 300, 0, 0.22)) {
-        const r2 = strike(atk, def, turn, haxAtk);
+        const r2 = oneStrike(atk, def, turn, haxAtk);
+        if (r2.type === "gambit") gambits++;
         if (r2.dmg > 0) {
           hurt(defSide, r2.dmg);
           counts[atkSide].dmg += r2.dmg; counts[atkSide].hits++;
@@ -179,7 +182,80 @@
     return fallback;
   }
 
-  const api = { gaussian, simulateBattle, simulateDetailed, runMonteCarlo, analyze, narrate, computeHax };
+  /* ============================================================
+     TEAM (tag-team / 2v2) battles.
+     Front fighter fights; KO'd fighters are replaced by a teammate.
+     A living "controller" (Guldo-type: time-stop / freeze / seal /
+     paralyze) can set up a teammate for a free heavy blow — but only
+     a few times per fight ("can't stop time for long").
+     ============================================================ */
+  function simulateTeamDetailed(TA, TB, opts = {}) {
+    const mk = arr => arr.map(c => ({ c, hp: ehp(c), max: ehp(c), hax: computeHax(c), ctrl: controlHax(c) }));
+    const A = mk(TA), B = mk(TB);
+    const events = opts.trace ? [] : null;
+    const alive = t => t.filter(f => f.hp > 0);
+    const front = t => alive(t)[0];
+    const totalHp = t => t.reduce((s, f) => s + Math.max(0, f.hp), 0);
+    const initOf = t => { const f = front(t); return f ? f.c.stats.speed * 0.8 + f.c.stats.range * 0.2 + 5 : 1; };
+    const assist = { A: A.some(f => f.ctrl) ? 2 : 0, B: B.some(f => f.ctrl) ? 2 : 0 }; // limited time-stops
+    const counts = { f1: { dmg: 0, assist: 0, down: 0 }, f2: { dmg: 0, assist: 0, down: 0 } };
+
+    function act(side, team, foe, turn) {
+      const atk = front(team), def = front(foe);
+      if (!atk || !def) return;
+      const me = side === "A" ? "f1" : "f2", foeSide = side === "A" ? "f2" : "f1";
+      // controller assist: freezes the foe; the team's STRONGEST member lands a
+      // free heavy blow during the freeze. Limited uses ("can't stop time long").
+      const ctrlF = alive(team).find(f => f.ctrl);
+      if (assist[side] > 0 && alive(team).length >= 2 && ctrlF &&
+          Math.random() < (0.17 + ctrlF.c.stats.intelligence / 1600)) {
+        const hitter = alive(team).slice().sort((x, y) =>
+          (y.c.stats.power + y.c.stats.technique) - (x.c.stats.power + x.c.stats.technique))[0];
+        const off = hitter.c.stats.power * 0.55 + hitter.c.stats.technique * 0.45;
+        const dmg = clamp(22 + off * 0.22 + ctrlF.c.stats.intelligence * 0.10 + gaussian(0, 6), 14, 50);
+        def.hp -= dmg; assist[side]--; counts[me].assist++; counts[me].dmg += dmg;
+        if (events) events.push({ t: turn + 1, type: "assist", side: me, ctrl: ctrlF.c.name, hitter: hitter.c.name, def: def.c.name, dmg: Math.round(dmg), hp: Math.max(0, Math.round(def.hp)) });
+        if (def.hp <= 0) { counts[foeSide].down++; if (events) events.push({ t: turn + 1, type: "down", side: foeSide, name: def.c.name }); }
+        return; // the time-stop is this team's action for the turn
+      }
+      const r = oneStrike(atk.c, def.c, turn, atk.hax);
+      if (r.dmg < 0) atk.hp += r.dmg;
+      else if (r.dmg > 0) { def.hp -= r.dmg; counts[me].dmg += r.dmg; }
+      if (events) events.push({ t: turn + 1, type: r.type, side: me, atk: atk.c.name, def: def.c.name, dmg: Math.round(Math.abs(r.dmg)), hp: Math.max(0, Math.round(def.hp)) });
+      if (def.hp <= 0 && r.dmg > 0) { counts[foeSide].down++; if (events) events.push({ t: turn + 1, type: "down", side: foeSide, name: def.c.name }); }
+    }
+
+    let turns = 0;
+    for (let turn = 0; turn < 80; turn++) {
+      turns = turn + 1;
+      if (!alive(A).length || !alive(B).length) break;
+      const aFirst = Math.random() < initOf(A) / (initOf(A) + initOf(B));
+      const order = aFirst ? [["A", A, B], ["B", B, A]] : [["B", B, A], ["A", A, B]];
+      for (const [side, team, foe] of order) { if (!alive(A).length || !alive(B).length) break; act(side, team, foe, turn); }
+    }
+    const aA = alive(A).length, bA = alive(B).length;
+    const winner = aA && !bA ? "f1" : bA && !aA ? "f2" : (totalHp(A) > totalHp(B) ? "f1" : totalHp(B) > totalHp(A) ? "f2" : "draw");
+    if (events) events.push({ type: "ko", winner });
+    return { winner, turns, counts, events, aAlive: aA, bAlive: bA };
+  }
+  function analyzeTeam(TA, TB, n = 100) {
+    const agg = { f1: { dmg: 0, assist: 0 }, f2: { dmg: 0, assist: 0 } };
+    let w1 = 0, w2 = 0, d = 0, tt = 0; const seq = [];
+    for (let i = 0; i < n; i++) {
+      const r = simulateTeamDetailed(TA, TB); seq.push(r.winner);
+      if (r.winner === "f1") w1++; else if (r.winner === "f2") w2++; else d++; tt += r.turns;
+      for (const s of ["f1", "f2"]) { agg[s].dmg += r.counts[s].dmg; agg[s].assist += r.counts[s].assist; }
+    }
+    for (const s of ["f1", "f2"]) { agg[s].dmg /= n; agg[s].assist /= n; }
+    return { seq, w1, w2, draws: d, avgTurns: tt / n, agg };
+  }
+  function narrateTeam(TA, TB, prefer, tries = 60) {
+    let fb = null;
+    for (let i = 0; i < tries; i++) { const r = simulateTeamDetailed(TA, TB, { trace: true }); if (!fb) fb = r; if (r.winner === prefer) return r; }
+    return fb;
+  }
+
+  const api = { gaussian, simulateBattle, simulateDetailed, runMonteCarlo, analyze, narrate, computeHax, controlHax, simulateTeamDetailed, analyzeTeam, narrateTeam };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.gaussian = gaussian;
   root.simulateBattle = simulateBattle;
@@ -188,4 +264,8 @@
   root.analyze = analyze;
   root.narrate = narrate;
   root.computeHax = computeHax;
+  root.controlHax = controlHax;
+  root.simulateTeamDetailed = simulateTeamDetailed;
+  root.analyzeTeam = analyzeTeam;
+  root.narrateTeam = narrateTeam;
 })(typeof globalThis !== "undefined" ? globalThis : this);

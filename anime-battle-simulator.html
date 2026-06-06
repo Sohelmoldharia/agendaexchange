@@ -163,6 +163,14 @@ h1 .ac{color:var(--red);}
   .breakdown{grid-template-columns:1fr;}
 }
 .footer{text-align:center;color:#56565f;font-size:11px;letter-spacing:.08em;margin-top:36px;}
+@media(max-width:440px){
+  .wrap{padding:24px 12px 70px;}
+  .fight-btn{padding:14px 40px;width:100%;}
+  .fighter-input{padding:16px 14px;}
+  .toterow{grid-template-columns:28px 1fr 52px 1fr 28px;gap:6px;}
+  .score{gap:10px;}
+  .again button,.shbtn{flex:1;}
+}
 
 /* suggestions */
 .suggest{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;}
@@ -180,6 +188,17 @@ h1 .ac{color:var(--red);}
 .sharedbanner.on{display:flex;}
 .sharedbanner button{background:var(--ink);color:var(--bg);border:none;font-family:var(--disp);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:12px;padding:9px 16px;cursor:pointer;}
 .sharedbanner button:hover{background:var(--gold);}
+
+/* teammate (tag team) */
+.teammate{display:none;border-top:1px dashed var(--line);margin-top:14px;padding-top:12px;}
+.teammate.on{display:block;}
+.teammate input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:0;background:#0e0e11;color:var(--ink);font-size:15px;font-family:var(--body);outline:none;}
+.f1 .teammate input:focus{border-color:var(--red);} .f2 .teammate input:focus{border-color:var(--blue);}
+.tmlabel{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.tmx{background:none;border:none;color:var(--bad);cursor:pointer;font-size:10px;letter-spacing:.08em;text-transform:uppercase;}
+.addtm{margin-top:10px;background:none;border:1px dashed var(--line);color:var(--mut);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;cursor:pointer;width:100%;}
+.addtm:hover{border-color:var(--ink);color:var(--ink);}
+.addtm.hidden{display:none;}
 
 /* mini buttons */
 .minirow{display:flex;gap:10px;}
@@ -278,6 +297,12 @@ h1 .ac{color:var(--red);}
         <input id="n1" type="text" placeholder="Goku" autocomplete="off"/>
         <label>Franchise</label>
         <input id="a1" type="text" placeholder="Dragon Ball" autocomplete="off"/>
+        <div class="teammate" id="tm1">
+          <div class="tmlabel">＋ Teammate <button type="button" class="tmx" id="rm1">remove</button></div>
+          <input id="n1b" type="text" placeholder="Teammate name" autocomplete="off"/>
+          <input id="a1b" type="text" placeholder="Franchise" autocomplete="off" style="margin-top:6px"/>
+        </div>
+        <button type="button" class="addtm" id="add1">＋ Add teammate (tag team)</button>
         <div class="suggest" id="sug1"></div>
       </div>
       <div class="vs-mid">VS</div>
@@ -286,6 +311,12 @@ h1 .ac{color:var(--red);}
         <input id="n2" type="text" placeholder="Gojo Satoru" autocomplete="off"/>
         <label>Franchise</label>
         <input id="a2" type="text" placeholder="Jujutsu Kaisen" autocomplete="off"/>
+        <div class="teammate" id="tm2">
+          <div class="tmlabel">＋ Teammate <button type="button" class="tmx" id="rm2">remove</button></div>
+          <input id="n2b" type="text" placeholder="Teammate name" autocomplete="off"/>
+          <input id="a2b" type="text" placeholder="Franchise" autocomplete="off" style="margin-top:6px"/>
+        </div>
+        <button type="button" class="addtm" id="add2">＋ Add teammate (tag team)</button>
         <div class="suggest" id="sug2"></div>
       </div>
     </div>
@@ -551,7 +582,8 @@ function makeRadar(canvasId, profile, color){
    ============================================================ */
 function renderCard(idx, p, color){
   $(`c${idx}name`).textContent=p.name;
-  $(`c${idx}anime`).textContent=p.anime + (p.role? "  ·  "+p.role : "");
+  $(`c${idx}anime`).textContent = p.role==="Tag Team" ? "TAG TEAM"
+    : ("("+p.anime+")" + (p.role? "  ·  "+p.role : ""));
   const tier=$(`c${idx}tier`); tier.textContent=(p.power_tier||p.tier); tier.className="tier "+(p.tier||"mid");
   $(`c${idx}sig`).innerHTML=`<b>Signature:</b> ${escapeHtml(p.signature_move||"—")}`;
 
@@ -692,8 +724,13 @@ function renderResult(A, B, w1, w2, opts={}){
 
   $("recap").textContent=buildRecap(A,B,w1,w2,d);
   const wSide = w1>w2?"f1":(w2>w1?"f2":"f1");
-  buildPlayByPlay(A,B,wSide);
-  if(opts.stats) buildAnalysis(A,B,w1,w2,opts.stats); else { $("analysis").classList.remove("on"); $("analysis").innerHTML=""; }
+  if(opts.team){
+    buildTeamPlayByPlay(state.teamA,state.teamB,wSide);
+    if(opts.stats) buildTeamAnalysis(A,B,w1,w2,opts.stats); else { $("analysis").classList.remove("on"); $("analysis").innerHTML=""; }
+  } else {
+    buildPlayByPlay(A,B,wSide);
+    if(opts.stats) buildAnalysis(A,B,w1,w2,opts.stats); else { $("analysis").classList.remove("on"); $("analysis").innerHTML=""; }
+  }
   LAST={ a:[A.name,A.anime], b:[B.name,B.anime], w:[w1,w2], v:verdictFor(winnerWins) };
   if(opts.log!==false) postLog(A,B,w1,w2);
   if(opts.scroll!==false) $("results").scrollIntoView({behavior:"smooth",block:"center"});
@@ -708,36 +745,39 @@ function showResults(seq, A, B){
    MAIN FLOW
    ============================================================ */
 async function startFight(){
-  const n1=$("n1").value.trim()||$("n1").placeholder;
-  const a1=$("a1").value.trim()||$("a1").placeholder;
-  const n2=$("n2").value.trim()||$("n2").placeholder;
-  const a2=$("a2").value.trim()||$("a2").placeholder;
-
   $("errMsg").textContent=""; $("sug1").innerHTML=""; $("sug2").innerHTML="";
   $("sharedBanner").classList.remove("on");
 
-  // roster-first: on a miss with a close match, offer "did you mean?" before spending a scout
-  const h1=rosterLookup(n1,a1), h2=rosterLookup(n2,a2);
-  let blocked=false;
-  if(!h1 && renderSuggest(1,n1)) blocked=true;
-  if(!h2 && renderSuggest(2,n2)) blocked=true;
-  if(blocked){ $("errMsg").textContent="Not in the roster — pick a suggestion, or check the spelling."; return; }
+  const sideA=sideFighters(1), sideB=sideFighters(2);
+  const isTeam = sideA.length>1 || sideB.length>1;
+
+  if(!isTeam){  // 1v1 — offer "did you mean?" on a near-miss before spending a scout
+    const h1=rosterLookup(sideA[0].name,sideA[0].anime), h2=rosterLookup(sideB[0].name,sideB[0].anime);
+    let blocked=false;
+    if(!h1 && renderSuggest(1,sideA[0].name)) blocked=true;
+    if(!h2 && renderSuggest(2,sideB[0].name)) blocked=true;
+    if(blocked){ $("errMsg").textContent="Not in the roster — pick a suggestion, or check the spelling."; return; }
+  }
 
   $("fightBtn").disabled=true; $("fightBtn").textContent="SCOUTING…";
   $("results").classList.remove("on");
   $("card1").classList.remove("in","winner","loser");
   $("card2").classList.remove("in","winner","loser");
 
-  const [r1,r2] = await Promise.allSettled([ scout(n1,a1), scout(n2,a2) ]);
-  if(r1.status!=="fulfilled" || r2.status!=="fulfilled"){
-    const bad = r1.status!=="fulfilled" ? n1 : n2;
-    const detail = (r1.reason||r2.reason||{}).message || "";
-    $("errMsg").textContent=`⚠ Couldn't load ${bad} — ${detail}.`;
-    $("fightBtn").disabled=false; $("fightBtn").textContent="FIGHT";
-    return;
+  const all=[...sideA,...sideB];
+  const res=await Promise.allSettled(all.map(f=>scout(f.name,f.anime)));
+  const bad=res.findIndex(r=>r.status!=="fulfilled");
+  if(bad>=0){
+    $("errMsg").textContent=`⚠ Couldn't load ${all[bad].name} — ${(res[bad].reason||{}).message||"not found"}.`;
+    $("fightBtn").disabled=false; $("fightBtn").textContent="FIGHT"; return;
   }
+  const profs=res.map(r=>r.value);
+  state.teamA=profs.slice(0,sideA.length);
+  state.teamB=profs.slice(sideA.length);
+  state.isTeam=isTeam;
+  state.f1=teamProfile(state.teamA);
+  state.f2=teamProfile(state.teamB);
 
-  state.f1=r1.value; state.f2=r2.value;
   revealCards();
   $("fightBtn").textContent="FIGHT"; $("fightBtn").disabled=false;
   await new Promise(r=>setTimeout(r,1100));
@@ -753,9 +793,9 @@ function revealCards(){
 }
 
 async function runAndReveal(){
-  const res=analyze(state.f1,state.f2,100);
+  const res = state.isTeam ? analyzeTeam(state.teamA,state.teamB,100) : analyze(state.f1,state.f2,100);
   await playSimulation(res.seq,state.f1,state.f2);
-  renderResult(state.f1,state.f2,res.w1,res.w2,{stats:res});
+  renderResult(state.f1,state.f2,res.w1,res.w2,{stats:res, team:state.isTeam});
 }
 
 /* rematch: reuse same profiles, re-roll the 100 battles */
@@ -778,7 +818,7 @@ function newBattle(){
   $("tote").classList.remove("on"); $("tote").innerHTML="";
   $("analysis").classList.remove("on"); $("analysis").innerHTML="";
   $("pbp").classList.remove("on"); $("pbp").innerHTML=""; $("pbpToggle").textContent="📜 Show blow-by-blow";
-  state.f1=state.f2=null;
+  state.f1=state.f2=null; state.teamA=state.teamB=null; state.isTeam=false;
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
@@ -865,6 +905,7 @@ function renderTale(A,B){
 
 function randomBattle(){
   if(ROSTER_ARR.length<2) return;
+  ["1","2"].forEach(k=>{ $("tm"+k).classList.remove("on"); $("add"+k).classList.remove("hidden"); $("n"+k+"b").value=""; $("a"+k+"b").value=""; });
   let i=Math.floor(Math.random()*ROSTER_ARR.length), j;
   do{ j=Math.floor(Math.random()*ROSTER_ARR.length); }while(j===i);
   const A=ROSTER_ARR[i], B=ROSTER_ARR[j];
@@ -971,6 +1012,68 @@ function buildPlayByPlay(A,B,winnerSide){
   }).join("");
 }
 
+/* ---------- TAG TEAM ---------- */
+function sideFighters(i){
+  const out=[{ name:$("n"+i).value.trim()||$("n"+i).placeholder, anime:$("a"+i).value.trim()||$("a"+i).placeholder }];
+  if($("tm"+i).classList.contains("on")){
+    const n=$("n"+i+"b").value.trim(), a=$("a"+i+"b").value.trim();
+    if(n) out.push({ name:n, anime:a });
+  }
+  return out;
+}
+function teamProfile(fighters){
+  if(fighters.length===1) return fighters[0];
+  const avg={}; STAT_KEYS.forEach(k=>avg[k]=Math.round(fighters.reduce((s,f)=>s+(f.stats[k]||0),0)/fighters.length));
+  const rank={low:0,mid:1,high:2,top:3,godtier:4};
+  const tier=fighters.reduce((b,f)=> (rank[f.tier]||0)>(rank[b]||0)?f.tier:b, "low");
+  const flat=(key)=>[].concat(...fighters.map(f=>f[key]||[]));
+  return {
+    name: fighters.map(f=>f.name).join(" & "),
+    anime: "Tag Team",
+    role: "Tag Team",
+    power_tier: [...new Set(fighters.map(f=>f.power_tier).filter(Boolean))].join(" / "),
+    tier, stats:avg,
+    powers: flat("powers").slice(0,6),
+    pros: flat("pros").slice(0,3),
+    weaknesses: flat("weaknesses").slice(0,3),
+    signature_move: fighters.map(f=>(f.signature_move||"").split(",")[0].trim()).filter(Boolean).join(" · "),
+    wildcards: flat("wildcards").slice(0,3)
+  };
+}
+function buildTeamAnalysis(A,B,w1,w2,st){
+  const wSide=w1>=w2?"f1":"f2", lSide=wSide==="f1"?"f2":"f1";
+  const win=wSide==="f1"?A:B, lose=wSide==="f1"?B:A;
+  const wAgg=st.agg[wSide], lAgg=st.agg[lSide], winWins=Math.max(w1,w2), loseWins=Math.min(w1,w2);
+  const b=[];
+  b.push(`<b>${escapeHtml(win.name)}</b> out-damaged the other side <b>${wAgg.dmg.toFixed(0)}</b> to <b>${lAgg.dmg.toFixed(0)}</b> per battle.`);
+  if(wAgg.assist>=0.2) b.push(`Time-stop / control set up <b>${wAgg.assist.toFixed(1)}</b> free assist blows a fight.`);
+  if(lAgg.assist>=0.2) b.push(`${escapeHtml(lose.name)} got <b>${lAgg.assist.toFixed(1)}</b> assist blows off — enough to steal <b>${loseWins}%</b> of bouts, not the war.`);
+  else if(loseWins>=12) b.push(`${escapeHtml(lose.name)} still took <b>${loseWins}%</b> on variance and clutch tags.`);
+  b.push(`Ran ~<b>${st.avgTurns.toFixed(0)}</b> turns; teammates tag in when one falls.`);
+  $("analysis").innerHTML=`<div class="ah">Why ${escapeHtml(win.name)} won</div><ul>${b.slice(0,5).map(x=>`<li>${x}</li>`).join("")}</ul><div class="abasis">Based on <b>100</b> simulated tag-team fights — front-liners trade blows, KO'd fighters are replaced, and a living controller (time-stop / freeze / seal) enables a few free assist blows ("can't stop time for long").</div>`;
+  $("analysis").classList.add("on");
+}
+function buildTeamPlayByPlay(TA,TB,winnerSide){
+  const r=narrateTeam(TA,TB,winnerSide);
+  $("pbp").classList.remove("on"); $("pbpToggle").textContent="📜 Show blow-by-blow";
+  if(!r||!r.events){ $("pbp").innerHTML=""; return; }
+  $("pbp").innerHTML=r.events.map(ev=>{
+    if(ev.type==="ko"){ const nm=ev.winner==="f1"?state.f1.name:state.f2.name; return `<div class="ev ko">🏆 ${escapeHtml(nm)} takes the tag match!</div>`; }
+    if(ev.type==="down"){ return `<div class="ev ko" style="border:none;margin-top:2px;padding-top:2px">💀 ${escapeHtml(ev.name)} is down!</div>`; }
+    const tn=`<span class="tn">T${ev.t}</span>`; let txt, cls=ev.side;
+    const hp=ev.hp!=null?`<span class="hp">(${escapeHtml(ev.def)} ${ev.hp})</span>`:"";
+    switch(ev.type){
+      case "assist": txt=`<b>${escapeHtml(ev.ctrl)}</b> freezes time — <span class="k">${escapeHtml(ev.hitter)} smashes ${escapeHtml(ev.def)} for ${ev.dmg}!</span> ${hp}`; cls=ev.side+" gambit"; break;
+      case "dodge": txt=`<b>${escapeHtml(ev.def)}</b> slips ${escapeHtml(ev.atk)}'s attack`; break;
+      case "counter": txt=`<b>${escapeHtml(ev.def)}</b> counters ${escapeHtml(ev.atk)} for ${ev.dmg}!`; break;
+      case "crit": txt=`<b>${escapeHtml(ev.atk)}</b> — CRIT ${ev.dmg}! ${hp}`; cls=ev.side+" crit"; break;
+      case "gambit": txt=`<b>${escapeHtml(ev.atk)}</b>'s trick bypasses ${escapeHtml(ev.def)} — ${ev.dmg}! ${hp}`; cls=ev.side+" gambit"; break;
+      default: txt=`<b>${escapeHtml(ev.atk)}</b> hits ${escapeHtml(ev.def)} — ${ev.dmg} ${hp}`;
+    }
+    return `<div class="ev ${cls}">${tn}${txt}</div>`;
+  }).join("");
+}
+
 /* open a shared link -> render that exact result */
 async function loadFromUrl(){
   const p=new URLSearchParams(location.search).get("r");
@@ -1006,6 +1109,10 @@ document.querySelectorAll(".bc").forEach(b=>b.addEventListener("click",()=>{ bro
 $("browseSearch").addEventListener("input",e=>renderBrowse(e.target.value));
 $("pbpToggle").addEventListener("click",()=>{ const on=$("pbp").classList.toggle("on"); $("pbpToggle").textContent= on?"📜 Hide blow-by-blow":"📜 Show blow-by-blow"; });
 $("randomBtn2").addEventListener("click",randomBattle);
+["1","2"].forEach(i=>{
+  $("add"+i).addEventListener("click",()=>{ $("tm"+i).classList.add("on"); $("add"+i).classList.add("hidden"); $("n"+i+"b").focus(); });
+  $("rm"+i).addEventListener("click",()=>{ $("tm"+i).classList.remove("on"); $("add"+i).classList.remove("hidden"); $("n"+i+"b").value=""; $("a"+i+"b").value=""; });
+});
 
 [ "n1","a1","n2","a2" ].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") startFight(); }));
 // live "did you mean?" as you type the character name

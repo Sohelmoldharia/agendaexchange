@@ -115,5 +115,26 @@ if (gi) check(`Goku massively favored vs Isagi (${gi.a.toFixed(0)}%)`, gi.a >= 9
 show("Levi Ackerman", "Batman");
 show("Saitama", "Naruto Uzumaki");
 
+console.log("\n=== TAG TEAM ===");
+function trate(TA, TB, n = 4000) { const r = E.analyzeTeam(TA, TB, n); return { a: r.a = r.w1 / n * 100, b: r.w2 / n * 100, turns: r.avgTurns }; }
+{
+  const mk = (name, p, sp, du, te, int, st, ra, pw) => S(name, { s: stat(p, sp, du, te, int, st, ra), powers: pw || [] });
+  // mirror team -> ~50/50
+  const t = [mk("A", 72, 70, 70, 70, 70, 70, 70), mk("B", 60, 60, 60, 60, 60, 60, 60)];
+  const m = trate(t, t);
+  check(`team mirror ~50/50 (${m.a.toFixed(0)}/${m.b.toFixed(0)})`, Math.abs(m.a - m.b) < 10);
+
+  // time-stop controller MATERIALLY helps a duo vs a comparable foe
+  const guldo  = mk("Guldo",  30, 35, 30, 55, 82, 40, 55, ["time stop", "freeze"]);
+  const plain  = mk("Plain",  30, 35, 30, 55, 82, 40, 55, ["punch"]);
+  const ally   = mk("Ally",   74, 55, 80, 58, 40, 80, 42);
+  const foe    = [mk("FoeA", 78, 72, 75, 72, 72, 75, 70), mk("FoeB", 55, 60, 55, 65, 60, 60, 58)];
+  const withTS = trate([guldo, ally], foe).a;
+  const noTS   = trate([plain, ally], foe).a;
+  console.log(`     time-stop duo ${withTS.toFixed(0)}%  vs  same duo without ${noTS.toFixed(0)}%`);
+  check(`time-stop enables real upsets (${withTS.toFixed(0)}% vs ${noTS.toFixed(0)}%)`, withTS > noTS + 12);
+  check(`...but not a guarantee (${withTS.toFixed(0)}% < 85%)`, withTS < 85);
+}
+
 console.log(`\n=== ${pass} passed, ${fail} failed ===\n`);
 process.exit(fail ? 1 : 0);
