@@ -2273,6 +2273,28 @@ export function isBlocked(site: AnimeSite): boolean {
   return (site.blockedIn?.length ?? 0) > 0;
 }
 
+export type RegionGroup = "global" | "asia" | "europe" | "latam" | "other";
+
+/** Bucket a site into a coarse region group (defaults to "global"). */
+export function regionGroup(site: AnimeSite): RegionGroup {
+  const r = (site.region ?? "").toLowerCase();
+  if (
+    /japan|china|korea|taiwan|\basia\b|indonesia|hong kong|india|thailand|vietnam|philippines|singapore|malaysia|brunei|cambodia/.test(
+      r,
+    )
+  )
+    return "asia";
+  if (
+    /europe|france|germany|italy|spain|belgium|austria|netherlands|nordic|luxembourg|\beu\b/.test(
+      r,
+    )
+  )
+    return "europe";
+  if (/latin america|brazil|mexico|latam/.test(r)) return "latam";
+  if (/mena|arab|russia|\bcis\b|uae|emirates/.test(r)) return "other";
+  return "global";
+}
+
 export interface SiteCounts {
   total: number;
   legal: number;

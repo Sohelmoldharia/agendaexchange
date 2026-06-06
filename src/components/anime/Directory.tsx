@@ -3,7 +3,11 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/format";
-import { isBlocked, type AnimeSite, type SiteKind } from "@/lib/anime/sites";
+import {
+  isBlocked,
+  regionGroup,
+  type AnimeSite,
+} from "@/lib/anime/sites";
 import { SiteRow } from "./SiteRow";
 
 type StatusFilter = "all" | "legal" | "free" | "blocked" | "shutdown";
@@ -16,12 +20,17 @@ const STATUS_FILTERS: { k: StatusFilter; label: string; dot?: string }[] = [
   { k: "shutdown", label: "Defunct", dot: "bg-zinc-500" },
 ];
 
-const CATEGORIES: { k: SiteKind; label: string; emoji: string }[] = [
-  { k: "stream", label: "Streaming", emoji: "📺" },
-  { k: "manga", label: "Manga & Reading", emoji: "📖" },
-  { k: "download", label: "Downloads & Torrents", emoji: "🧲" },
-  { k: "database", label: "Databases & Trackers", emoji: "🗂️" },
-  { k: "news", label: "News", emoji: "📰" },
+// Streaming is split by region; everything else is one box per kind.
+const SECTION_ORDER: { key: string; label: string; emoji: string }[] = [
+  { key: "stream:global", label: "Streaming · Global / EN", emoji: "📺" },
+  { key: "stream:asia", label: "Streaming · Asia", emoji: "🌏" },
+  { key: "stream:europe", label: "Streaming · Europe", emoji: "🇪🇺" },
+  { key: "stream:latam", label: "Streaming · Latin America", emoji: "🌎" },
+  { key: "stream:other", label: "Streaming · Other regions", emoji: "🌍" },
+  { key: "manga", label: "Manga & Reading", emoji: "📖" },
+  { key: "download", label: "Downloads & Torrents", emoji: "🧲" },
+  { key: "database", label: "Databases & Trackers", emoji: "🗂️" },
+  { key: "news", label: "News", emoji: "📰" },
 ];
 
 const STATUS_RANK: Record<AnimeSite["status"], number> = {
@@ -30,6 +39,10 @@ const STATUS_RANK: Record<AnimeSite["status"], number> = {
   shutdown: 2,
 };
 const CAP = 12;
+
+function sectionKeyFor(s: AnimeSite): string {
+  return s.kind === "stream" ? `stream:${regionGroup(s)}` : s.kind;
+}
 
 function matchesStatus(site: AnimeSite, f: StatusFilter): boolean {
   if (f === "all") return true;
@@ -46,7 +59,7 @@ export function Directory({
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>(initialStatus);
-  const [expanded, setExpanded] = useState<Set<SiteKind>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const q = query.trim().toLowerCase();
   const filtering = q.length > 0 || status !== "all";
@@ -65,11 +78,12 @@ export function Directory({
   }, [sites, q, status]);
 
   const grouped = useMemo(() => {
-    const map = new Map<SiteKind, AnimeSite[]>();
+    const map = new Map<string, AnimeSite[]>();
     for (const s of filtered) {
-      const arr = map.get(s.kind) ?? [];
+      const key = sectionKeyFor(s);
+      const arr = map.get(key) ?? [];
       arr.push(s);
-      map.set(s.kind, arr);
+      map.set(key, arr);
     }
     for (const arr of map.values()) {
       arr.sort(
@@ -82,15 +96,16 @@ export function Directory({
     return map;
   }, [filtered]);
 
-  const counts = useMemo(() => {
-    return {
+  const counts = useMemo(
+    () => ({
       total: sites.length,
       legal: sites.filter((s) => s.status === "legal").length,
       free: sites.filter((s) => s.status === "free").length,
       shutdown: sites.filter((s) => s.status === "shutdown").length,
       blocked: sites.filter(isBlocked).length,
-    };
-  }, [sites]);
+    }),
+    [sites],
+  );
 
   return (
     <div>
@@ -145,35 +160,35 @@ export function Directory({
         </div>
       ) : (
         <div className="mt-4 gap-3 sm:columns-2 lg:columns-3 xl:columns-4">
-          {CATEGORIES.map((cat) => {
-            const rows = grouped.get(cat.k);
+          {SECTION_ORDER.map((sec) => {
+            const rows = grouped.get(sec.key);
             if (!rows || rows.length === 0) return null;
-            const isOpen = filtering || expanded.has(cat.k);
+            const isOpen = filtering || expanded.has(sec.key);
             const shown = isOpen ? rows : rows.slice(0, CAP);
             const hiddenCount = rows.length - shown.length;
             return (
               <section
-                key={cat.k}
+                key={sec.key}
                 className="mb-3 inline-block w-full break-inside-avoid rounded-md border border-white/10 bg-white/[0.015]"
               >
                 <header className="flex items-center justify-between border-b border-white/10 px-3 py-2">
                   <span className="flex items-center gap-1.5 text-[13px] font-semibold text-zinc-200">
-                    <span>{cat.emoji}</span>
-                    {cat.label}
+                    <span>{sec.emoji}</span>
+                    {sec.label}
                   </span>
                   <span className="text-[11px] tabular-nums text-zinc-600">
                     {rows.length}
                   </span>
                 </header>
                 <div className="space-y-px p-1.5">
-                  {shown.map((s) => (
-                    <SiteRow key={s.slug} site={s} />
+                  {shown.map((s, i) => (
+                    <SiteRow key={s.slug} site={s} rank={i + 1} />
                   ))}
                   {hiddenCount > 0 && (
                     <button
                       type="button"
                       onClick={() =>
-                        setExpanded((prev) => new Set(prev).add(cat.k))
+                        setExpanded((prev) => new Set(prev).add(sec.key))
                       }
                       className="w-full rounded px-2 py-1.5 text-left text-[11px] font-medium text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
                     >

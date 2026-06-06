@@ -1,15 +1,10 @@
 import Link from "next/link";
 import { cn } from "@/lib/format";
 import { isBlocked, type AnimeSite } from "@/lib/anime/sites";
+import { Favicon } from "./Favicon";
 
-const DOT: Record<AnimeSite["status"], string> = {
-  legal: "bg-emerald-400",
-  free: "bg-amber-400",
-  shutdown: "bg-zinc-600",
-};
-
-/** One compact, flat directory row — favicon-dot + name + a muted right tag. */
-export function SiteRow({ site }: { site: AnimeSite }) {
+/** One compact, flat directory row — rank + favicon + name + muted right tag. */
+export function SiteRow({ site, rank }: { site: AnimeSite; rank?: number }) {
   const blocked = isBlocked(site);
   const right =
     site.status === "shutdown" && site.endedYear
@@ -21,10 +16,12 @@ export function SiteRow({ site }: { site: AnimeSite }) {
       href={`/anime/site/${site.slug}`}
       className="group flex items-center gap-2 rounded px-2 py-[5px] hover:bg-white/[0.05]"
     >
-      <span
-        className={cn("h-1.5 w-1.5 shrink-0 rounded-full", DOT[site.status])}
-        aria-hidden
-      />
+      {rank != null && (
+        <span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-zinc-600">
+          {rank}
+        </span>
+      )}
+      <Favicon site={site} />
       <span
         className={cn(
           "truncate text-[13px]",
@@ -35,6 +32,11 @@ export function SiteRow({ site }: { site: AnimeSite }) {
       >
         {site.name}
       </span>
+      {site.status === "legal" && (
+        <span className="shrink-0 rounded-sm bg-emerald-500/10 px-1 text-[9px] font-semibold uppercase text-emerald-400/80">
+          official
+        </span>
+      )}
       {blocked && (
         <span
           title="Blocked in one or more countries"
