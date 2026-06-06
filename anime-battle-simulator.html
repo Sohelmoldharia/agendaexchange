@@ -237,6 +237,28 @@ h1 .ac{color:var(--red);}
 .bcard .bf{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
 .bcard .bt{float:right;font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;}
 
+/* result analysis (why X won) */
+.analysis{max-width:620px;margin:18px auto 0;text-align:left;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--gold);padding:14px 18px;display:none;}
+.analysis.on{display:block;}
+.analysis .ah{font-family:var(--disp);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--mut);margin-bottom:8px;}
+.analysis ul{margin:0;padding:0;list-style:none;}
+.analysis li{font-size:13.5px;line-height:1.6;color:var(--ink);padding-left:16px;position:relative;margin:5px 0;}
+.analysis li::before{content:"›";position:absolute;left:0;color:var(--gold);font-weight:700;}
+.analysis li b{color:var(--gold);font-variant-numeric:tabular-nums;}
+
+/* play-by-play */
+.pbptoggle{margin:14px auto 0;display:inline-block;border:1px solid var(--line);background:transparent;color:var(--mut);font-family:var(--disp);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:12px;padding:9px 18px;cursor:pointer;}
+.pbptoggle:hover{border-color:var(--ink);color:var(--ink);}
+.pbp{display:none;max-width:620px;margin:14px auto 0;text-align:left;background:#0e0e11;border:1px solid var(--line);max-height:320px;overflow-y:auto;padding:12px 16px;font-size:13px;line-height:1.7;}
+.pbp.on{display:block;}
+.pbp .ev{color:var(--mut);}
+.pbp .ev .tn{display:inline-block;width:48px;color:#56565f;font-variant-numeric:tabular-nums;font-size:11px;}
+.pbp .ev.f1 b{color:var(--red);} .pbp .ev.f2 b{color:var(--blue);}
+.pbp .ev.crit{color:var(--ink);} .pbp .ev.crit .k{color:var(--gold);font-weight:700;}
+.pbp .ev.gambit{color:var(--ink);} .pbp .ev.gambit .k{color:var(--gold);font-weight:700;}
+.pbp .ev.ko{color:var(--ink);font-family:var(--disp);letter-spacing:.06em;text-transform:uppercase;margin-top:6px;padding-top:8px;border-top:1px solid var(--line);}
+.pbp .hp{color:#56565f;font-size:11px;}
+
 </style>
 </head>
 <body>
@@ -337,6 +359,9 @@ h1 .ac{color:var(--red);}
       </div>
     </div>
     <div class="recap" id="recap"></div>
+    <div class="analysis" id="analysis"></div>
+    <button class="pbptoggle" id="pbpToggle">📜 Show blow-by-blow</button>
+    <div class="pbp" id="pbp"></div>
     <div class="again">
       <button class="rematch" id="rematchBtn">⟳ Rematch</button>
       <button class="newb" id="newBtn">＋ New Battle</button>
@@ -662,6 +687,9 @@ function renderResult(A, B, w1, w2, opts={}){
   else if(w2>w1){ c2.classList.add("winner"); c1.classList.add("loser"); if(opts.confetti!==false) fireConfetti(); }
 
   $("recap").textContent=buildRecap(A,B,w1,w2,d);
+  const wSide = w1>w2?"f1":(w2>w1?"f2":"f1");
+  buildPlayByPlay(A,B,wSide);
+  if(opts.stats) buildAnalysis(A,B,w1,w2,opts.stats); else { $("analysis").classList.remove("on"); $("analysis").innerHTML=""; }
   LAST={ a:[A.name,A.anime], b:[B.name,B.anime], w:[w1,w2], v:verdictFor(winnerWins) };
   if(opts.log!==false) postLog(A,B,w1,w2);
   if(opts.scroll!==false) $("results").scrollIntoView({behavior:"smooth",block:"center"});
@@ -721,9 +749,9 @@ function revealCards(){
 }
 
 async function runAndReveal(){
-  const seq=runMonteCarlo(state.f1,state.f2,100);
-  await playSimulation(seq,state.f1,state.f2);
-  showResults(seq,state.f1,state.f2);
+  const res=analyze(state.f1,state.f2,100);
+  await playSimulation(res.seq,state.f1,state.f2);
+  renderResult(state.f1,state.f2,res.w1,res.w2,{stats:res});
 }
 
 /* rematch: reuse same profiles, re-roll the 100 battles */
@@ -744,6 +772,8 @@ function newBattle(){
   $("sug1").innerHTML=""; $("sug2").innerHTML=""; $("errMsg").textContent="";
   $("sharedBanner").classList.remove("on");
   $("tote").classList.remove("on"); $("tote").innerHTML="";
+  $("analysis").classList.remove("on"); $("analysis").innerHTML="";
+  $("pbp").classList.remove("on"); $("pbp").innerHTML=""; $("pbpToggle").textContent="📜 Show blow-by-blow";
   state.f1=state.f2=null;
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -878,6 +908,61 @@ function postLog(A,B,w1,w2){
   try{ fetch("/api/log",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({a:[A.name,A.anime],b:[B.name,B.anime],wa:w1,wb:w2})}).then(()=>setTimeout(loadTrending,400)); }catch(e){}
 }
 
+/* ---------- "Why X won" analysis ---------- */
+function buildAnalysis(A,B,w1,w2,st){
+  const wSide = w1>=w2 ? "f1" : "f2", lSide = wSide==="f1"?"f2":"f1";
+  const win = wSide==="f1"?A:B, lose = wSide==="f1"?B:A;
+  const wAgg=st.agg[wSide], lAgg=st.agg[lSide];
+  const winWins=Math.max(w1,w2), loseWins=Math.min(w1,w2);
+  const b=[];
+  b.push(`<b>${escapeHtml(win.name)}</b> dealt <b>${wAgg.dmg.toFixed(0)}</b> avg damage per fight, to <b>${lAgg.dmg.toFixed(0)}</b>.`);
+  const lead=statLead(win,lose);
+  if(lead.bestD>2) b.push(`Decisive stat edge: <b>${lead.bestK}</b> ${win.stats[lead.bestK]} vs ${lose.stats[lead.bestK]} (+${lead.bestD}).`);
+  if(wAgg.crit>=0.4) b.push(`Landed <b>${wAgg.crit.toFixed(1)}</b> critical hits a fight (to ${lAgg.crit.toFixed(1)}).`);
+  const tf=st.agg.f1.first+st.agg.f2.first, fpct=tf?Math.round(wAgg.first/tf*100):50;
+  if(fpct>=56) b.push(`Won the initiative — struck first <b>${fpct}%</b> of turns.`);
+  if(lAgg.gambit>=0.2) b.push(`${escapeHtml(lose.name)} landed <b>${lAgg.gambit.toFixed(1)}</b> trick blows a fight — enough to steal <b>${loseWins}%</b> of bouts, not the war.`);
+  else if(loseWins>=18) b.push(`${escapeHtml(lose.name)} still took <b>${loseWins}%</b> on variance and clutch rounds.`);
+  if(wAgg.gambit>=0.3) b.push(`${escapeHtml(win.name)}'s tricks bypassed defenses <b>${wAgg.gambit.toFixed(1)}</b>× a fight.`);
+  if(lAgg.dodge>=2) b.push(`${escapeHtml(lose.name)} dodged <b>${lAgg.dodge.toFixed(1)}</b> hits a fight, but couldn't turn it around.`);
+  if(winWins-loseWins<=14) b.push(`Came down to the wire — ~<b>${st.avgTurns.toFixed(0)}</b> turns on average.`);
+  else if(winWins>=90) b.push(`A mismatch — fights ended in ~<b>${st.avgTurns.toFixed(0)}</b> turns.`);
+  $("analysis").innerHTML=`<div class="ah">Why ${escapeHtml(win.name)} won</div><ul>${b.slice(0,5).map(x=>`<li>${x}</li>`).join("")}</ul>`;
+  $("analysis").classList.add("on");
+}
+
+/* ---------- blow-by-blow play-by-play ---------- */
+function pickMove(C,type){
+  const sigs=(C.signature_abilities&&C.signature_abilities.length)?C.signature_abilities:(C.signature_move?C.signature_move.split(/,\s*/):[]);
+  const wc=(C.wildcards||[]).map(w=>w.name).filter(Boolean);
+  const pool=(type==="gambit"&&wc.length)?wc:(sigs.length?sigs:(C.powers||[]));
+  return pool.length? pool[Math.floor(Math.random()*pool.length)] : "an attack";
+}
+function buildPlayByPlay(A,B,winnerSide){
+  const r=narrate(A,B,winnerSide);
+  $("pbp").classList.remove("on"); $("pbpToggle").textContent="📜 Show blow-by-blow";
+  if(!r||!r.events){ $("pbp").innerHTML=""; return; }
+  const nm=s=>s==="f1"?A:B;
+  $("pbp").innerHTML=r.events.map(ev=>{
+    if(ev.type==="ko"){ const w=nm(ev.winner); return `<div class="ev ko">🏆 ${escapeHtml(w.name)} lands the finishing blow!</div>`; }
+    const atk=nm(ev.atk), def=nm(ev.def);
+    const hp=`<span class="hp">(${escapeHtml(def.name)} ${ev.def==="f1"?ev.hpA:ev.hpB})</span>`;
+    const tn=`<span class="tn">T${ev.t}</span>`;
+    let txt, cls=ev.atk;
+    switch(ev.type){
+      case "poke": txt=`<b>${escapeHtml(atk.name)}</b> opens from range — ${ev.dmg} ${hp}`; break;
+      case "dodge": txt=`<b>${escapeHtml(def.name)}</b> slips it <span style="color:#56565f">(${escapeHtml(atk.name)} whiffs)</span>`; cls=ev.def; break;
+      case "counter": txt=`<b>${escapeHtml(def.name)}</b> counters for ${ev.dmg}!`; cls=ev.def; break;
+      case "crit": txt=`<b>${escapeHtml(atk.name)}</b> — <span class="k">${escapeHtml(pickMove(atk))}, CRIT</span> ${ev.dmg}! ${hp}`; cls=ev.atk+" crit"; break;
+      case "gambit": txt=`<b>${escapeHtml(atk.name)}</b>'s <span class="k">${escapeHtml(pickMove(atk,"gambit"))}</span> bypasses defense — ${ev.dmg}! ${hp}`; cls=ev.atk+" gambit"; break;
+      case "exploit": txt=`<b>${escapeHtml(atk.name)}</b> reads the opening — ${ev.dmg}! ${hp}`; break;
+      case "double": txt=`<b>${escapeHtml(atk.name)}</b> blitzes again — ${ev.dmg} ${hp}`; break;
+      default: txt=`<b>${escapeHtml(atk.name)}</b> strikes — ${ev.dmg} ${hp}`;
+    }
+    return `<div class="ev ${cls}">${tn}${txt}</div>`;
+  }).join("");
+}
+
 /* open a shared link -> render that exact result */
 async function loadFromUrl(){
   const p=new URLSearchParams(location.search).get("r");
@@ -892,7 +977,8 @@ async function loadFromUrl(){
       state.f1=r1.value; state.f2=r2.value;
       revealCards();
       $("card1").classList.add("in"); $("card2").classList.add("in");
-      renderResult(state.f1, state.f2, data.w[0], data.w[1], {animate:false, confetti:false, scroll:true, log:false});
+      const st=analyze(state.f1,state.f2,100);
+      renderResult(state.f1, state.f2, data.w[0], data.w[1], {animate:false, confetti:false, scroll:true, log:false, stats:st});
     }
   }catch(e){ /* ignore */ }
   $("fightBtn").disabled=false; $("fightBtn").textContent="FIGHT";
@@ -910,6 +996,7 @@ $("browseClose").addEventListener("click",()=>$("browse").classList.remove("on")
 $("browse").addEventListener("click",e=>{ if(e.target===$("browse")) $("browse").classList.remove("on"); });
 document.querySelectorAll(".bc").forEach(b=>b.addEventListener("click",()=>{ browseCorner=+b.dataset.c; document.querySelectorAll(".bc").forEach(x=>x.classList.toggle("on",x===b)); }));
 $("browseSearch").addEventListener("input",e=>renderBrowse(e.target.value));
+$("pbpToggle").addEventListener("click",()=>{ const on=$("pbp").classList.toggle("on"); $("pbpToggle").textContent= on?"📜 Hide blow-by-blow":"📜 Show blow-by-blow"; });
 
 [ "n1","a1","n2","a2" ].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") startFight(); }));
 // live "did you mean?" as you type the character name
