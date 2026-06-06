@@ -65,8 +65,12 @@ export interface KindMeta {
 
 export const KIND_META: Record<SiteKind, KindMeta> = {
   stream: { label: "Streaming", emoji: "📺" },
+  donghua: { label: "Donghua", emoji: "🐉" },
   manga: { label: "Manga / reading", emoji: "📖" },
+  novel: { label: "Light novels", emoji: "📕" },
   download: { label: "Download / torrents", emoji: "🧲" },
   database: { label: "Database / tracker", emoji: "🗂️" },
+  schedule: { label: "Release schedule", emoji: "🗓️" },
+  app: { label: "Apps & tools", emoji: "📱" },
   news: { label: "News", emoji: "📰" },
 };

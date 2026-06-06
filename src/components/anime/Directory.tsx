@@ -27,9 +27,13 @@ const SECTION_ORDER: { key: string; label: string; emoji: string }[] = [
   { key: "stream:europe", label: "Streaming · Europe", emoji: "🇪🇺" },
   { key: "stream:latam", label: "Streaming · Latin America", emoji: "🌎" },
   { key: "stream:other", label: "Streaming · Other regions", emoji: "🌍" },
+  { key: "donghua", label: "Donghua", emoji: "🐉" },
   { key: "manga", label: "Manga & Reading", emoji: "📖" },
+  { key: "novel", label: "Light Novels", emoji: "📕" },
   { key: "download", label: "Downloads & Torrents", emoji: "🧲" },
+  { key: "schedule", label: "Release Schedule", emoji: "🗓️" },
   { key: "database", label: "Databases & Trackers", emoji: "🗂️" },
+  { key: "app", label: "Apps & Tools", emoji: "📱" },
   { key: "news", label: "News", emoji: "📰" },
 ];
 
