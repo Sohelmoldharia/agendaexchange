@@ -20,22 +20,25 @@ export default function AnimeLayout({
       <footer className="mt-20 border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-md">
-            <div className="text-lg font-black text-white">
-              Anime<span className="gradient-text">Index</span>
+            <div className="text-lg font-bold text-white">
+              Anime<span className="text-violet-300">Index</span>
             </div>
             <p className="mt-2 text-sm text-zinc-500">{BRAND.blurb}</p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-400">
-            <Link href="/anime/sites" className="hover:text-white">
-              Directory
+            <Link href="/anime" className="hover:text-white">
+              All sites
             </Link>
-            <Link href="/anime/sites?status=legal" className="hover:text-white">
-              Legal
+            <Link href="/anime?status=legal" className="hover:text-white">
+              Official
             </Link>
-            <Link href="/anime/sites?status=free" className="hover:text-white">
+            <Link href="/anime?status=free" className="hover:text-white">
               Free
             </Link>
-            <Link href="/anime/sites?status=shutdown" className="hover:text-white">
+            <Link href="/anime?status=blocked" className="hover:text-white">
+              Blocked
+            </Link>
+            <Link href="/anime?status=shutdown" className="hover:text-white">
               Defunct
             </Link>
           </nav>
