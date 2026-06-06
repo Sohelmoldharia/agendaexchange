@@ -45,7 +45,7 @@ export function Favicon({ site }: { site: AnimeSite }) {
         loading="lazy"
         referrerPolicy="no-referrer"
         onError={() => setIdx((i) => i + 1)}
-        className="h-4 w-4 shrink-0 rounded-sm bg-white/5"
+        className="h-5 w-5 shrink-0 rounded bg-white/5"
       />
     );
   }
@@ -54,7 +54,7 @@ export function Favicon({ site }: { site: AnimeSite }) {
   return (
     <span
       className={cn(
-        "grid h-4 w-4 shrink-0 place-items-center rounded-sm text-[9px] font-bold uppercase",
+        "grid h-5 w-5 shrink-0 place-items-center rounded text-[10px] font-bold uppercase",
         TILE[site.status],
       )}
       aria-hidden

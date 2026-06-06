@@ -17,14 +17,14 @@ export default async function AnimeHome({
   const sites = getAllSites();
 
   return (
-    <div className="mx-auto max-w-screen-2xl px-4 pb-16 pt-6">
-      <div className="mb-1">
-        <h1 className="text-xl font-bold text-white sm:text-2xl">
+    <div className="mx-auto max-w-screen-2xl px-4 pb-16 pt-8">
+      <div className="mb-4">
+        <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
           The anime site index
         </h1>
-        <p className="mt-1 max-w-2xl text-sm text-zinc-400">
+        <p className="mt-2 max-w-2xl text-[15px] text-zinc-400">
           Every anime streaming, manga, download, and tracking site — official,
-          free, blocked, or shut down. Browse by category or filter and search.
+          free, blocked, or shut down. Browse by category, or filter and search.
         </p>
       </div>
       <Directory sites={sites} initialStatus={initial} />
