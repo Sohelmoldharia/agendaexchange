@@ -3,11 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/format";
-import {
-  isBlocked,
-  regionGroup,
-  type AnimeSite,
-} from "@/lib/anime/sites";
+import { isBlocked, regionGroup, type AnimeSite } from "@/lib/anime/sites";
 import { SiteRow } from "./SiteRow";
 
 type StatusFilter = "all" | "legal" | "free" | "blocked" | "shutdown";
@@ -63,7 +59,6 @@ export function Directory({
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>(initialStatus);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const q = query.trim().toLowerCase();
   const filtering = q.length > 0 || status !== "all";
@@ -167,45 +162,94 @@ export function Directory({
           {SECTION_ORDER.map((sec) => {
             const rows = grouped.get(sec.key);
             if (!rows || rows.length === 0) return null;
-            const isOpen = filtering || expanded.has(sec.key);
-            const shown = isOpen ? rows : rows.slice(0, CAP);
-            const hiddenCount = rows.length - shown.length;
             return (
-              <section
+              <CategoryBox
                 key={sec.key}
-                className="mb-3 inline-block w-full break-inside-avoid rounded-md border border-white/10 bg-white/[0.015]"
-              >
-                <header className="flex items-center justify-between border-b border-white/10 px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-[13px] font-semibold text-zinc-200">
-                    <span>{sec.emoji}</span>
-                    {sec.label}
-                  </span>
-                  <span className="text-[11px] tabular-nums text-zinc-600">
-                    {rows.length}
-                  </span>
-                </header>
-                <div className="space-y-px p-1.5">
-                  {shown.map((s, i) => (
-                    <SiteRow key={s.slug} site={s} rank={i + 1} />
-                  ))}
-                  {hiddenCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExpanded((prev) => new Set(prev).add(sec.key))
-                      }
-                      className="w-full rounded px-2 py-1.5 text-left text-[11px] font-medium text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
-                    >
-                      Show all {rows.length} →
-                    </button>
-                  )}
-                </div>
-              </section>
+                section={sec}
+                rows={rows}
+                forceOpen={filtering}
+              />
             );
           })}
         </div>
       )}
     </div>
+  );
+}
+
+function CategoryBox({
+  section,
+  rows,
+  forceOpen,
+}: {
+  section: { key: string; label: string; emoji: string };
+  rows: AnimeSite[];
+  forceOpen: boolean;
+}) {
+  const [feature, setFeature] = useState("any");
+  const [open, setOpen] = useState(false);
+
+  const featureOptions = useMemo(() => {
+    const freq = new Map<string, number>();
+    for (const r of rows) for (const f of r.features) freq.set(f, (freq.get(f) ?? 0) + 1);
+    return [...freq.entries()]
+      .filter(([, n]) => n >= 2)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([f]) => f);
+  }, [rows]);
+
+  const visible =
+    feature === "any" ? rows : rows.filter((r) => r.features.includes(feature));
+  const isOpen = forceOpen || open || feature !== "any";
+  const shown = isOpen ? visible : visible.slice(0, CAP);
+  const hidden = visible.length - shown.length;
+
+  return (
+    <section className="mb-3 inline-block w-full break-inside-avoid rounded-md border border-white/10 bg-white/[0.015]">
+      <header className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
+        <span className="flex items-center gap-1.5 text-[13px] font-semibold text-zinc-200">
+          <span>{section.emoji}</span>
+          {section.label}
+        </span>
+        <span className="text-[11px] tabular-nums text-zinc-600">{rows.length}</span>
+      </header>
+      {featureOptions.length >= 3 && (
+        <div className="border-b border-white/10 px-2 py-1.5">
+          <select
+            value={feature}
+            onChange={(e) => setFeature(e.target.value)}
+            aria-label={`Filter ${section.label} by feature`}
+            className="w-full rounded border border-white/10 bg-black/30 px-2 py-1 text-[11px] text-zinc-300 outline-none focus:border-white/25"
+          >
+            <option value="any">Any feature</option>
+            {featureOptions.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div className="space-y-px p-1.5">
+        {shown.map((s, i) => (
+          <SiteRow key={s.slug} site={s} rank={i + 1} />
+        ))}
+        {visible.length === 0 && (
+          <p className="px-2 py-2 text-[11px] text-zinc-600">
+            No matches for that feature.
+          </p>
+        )}
+        {hidden > 0 && (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="w-full rounded px-2 py-1.5 text-left text-[11px] font-medium text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
+          >
+            Show all {visible.length} →
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 

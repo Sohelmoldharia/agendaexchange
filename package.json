@@ -11,6 +11,7 @@
     "freeport": "kill-port 3001 || true",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
+    "icons": "tsx scripts/fetch-icons.mts",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },

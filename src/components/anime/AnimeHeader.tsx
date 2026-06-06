@@ -5,7 +5,7 @@ const LINKS = [
   { href: "/anime?status=legal", label: "Official" },
   { href: "/anime?status=free", label: "Free" },
   { href: "/anime?status=blocked", label: "Blocked" },
-  { href: "/anime?status=shutdown", label: "Defunct" },
+  { href: "/anime/graveyard", label: "Graveyard" },
 ];
 
 export function AnimeHeader() {
