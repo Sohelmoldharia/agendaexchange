@@ -244,16 +244,22 @@ export type TapeItem = {
 };
 
 export async function getTapeData(): Promise<TapeItem[]> {
-  const stocks = await prisma.stock.findMany({
-    select: { ticker: true, emoji: true, price: true, basePrice: true },
-    orderBy: { floatShares: "desc" },
-  });
-  return stocks.map((s) => ({
-    ticker: s.ticker,
-    emoji: s.emoji,
-    price: s.price,
-    change: s.basePrice > 0 ? ((s.price - s.basePrice) / s.basePrice) * 100 : 0,
-  }));
+  try {
+    const stocks = await prisma.stock.findMany({
+      select: { ticker: true, emoji: true, price: true, basePrice: true },
+      orderBy: { floatShares: "desc" },
+    });
+    return stocks.map((s) => ({
+      ticker: s.ticker,
+      emoji: s.emoji,
+      price: s.price,
+      change:
+        s.basePrice > 0 ? ((s.price - s.basePrice) / s.basePrice) * 100 : 0,
+    }));
+  } catch {
+    // No database yet (e.g. running only the anime site) — render empty.
+    return [];
+  }
 }
 
 export type RangeKey = "1D" | "1W" | "1M" | "ALL";
