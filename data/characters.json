@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "updated": "2026-06-06",
+  "characters": [
+    {
+      "id": "goku|dragon-ball",
+      "name": "Goku",
+      "anime": "Dragon Ball",
+      "medium": "anime",
+      "stats": { "power": 96, "speed": 95, "durability": 92, "technique": 88, "intelligence": 70, "stamina": 90, "range": 85 },
+      "pros": ["Endless adaptability and growth mid-fight", "Mastery of Ultra Instinct dodging", "Limitless ki reserves"],
+      "weaknesses": ["Often holds back and toys with opponents", "Naive — can be tricked or baited"],
+      "wildcards": [{ "name": "Ultra Instinct", "trigger_chance": 0.18, "effect_desc": "Autonomous dodging and counters.", "stat_boost": 22 }],
+      "signature_move": "Kamehameha",
+      "tier": "godtier"
+    },
+    {
+      "id": "saitama|one-punch-man",
+      "name": "Saitama",
+      "anime": "One Punch Man",
+      "medium": "anime",
+      "stats": { "power": 100, "speed": 98, "durability": 99, "technique": 55, "intelligence": 60, "stamina": 95, "range": 45 },
+      "pros": ["Ends any fight in a single punch", "Effectively unkillable", "Infinite stamina"],
+      "weaknesses": ["Crude technique — no finesse", "Gets bored and disengages"],
+      "wildcards": [{ "name": "Serious Punch", "trigger_chance": 0.25, "effect_desc": "A blow that splits the sky.", "stat_boost": 30 }],
+      "signature_move": "Serious Series: Serious Punch",
+      "tier": "godtier"
+    },
+    {
+      "id": "gojo-satoru|jujutsu-kaisen",
+      "name": "Gojo Satoru",
+      "anime": "Jujutsu Kaisen",
+      "medium": "anime",
+      "stats": { "power": 86, "speed": 90, "durability": 80, "technique": 95, "intelligence": 88, "stamina": 78, "range": 88 },
+      "pros": ["Infinity makes him near-untouchable", "Domain Expansion guarantees hits", "Brilliant tactician"],
+      "weaknesses": ["Cursed technique drains him over time", "Arrogance leads to risky openings"],
+      "wildcards": [{ "name": "Unlimited Void", "trigger_chance": 0.15, "effect_desc": "Domain that freezes the opponent.", "stat_boost": 25 }],
+      "signature_move": "Hollow Purple",
+      "tier": "top"
+    },
+    {
+      "id": "monkey-d-luffy|one-piece",
+      "name": "Monkey D. Luffy",
+      "anime": "One Piece",
+      "medium": "anime",
+      "stats": { "power": 88, "speed": 86, "durability": 90, "technique": 82, "intelligence": 58, "stamina": 92, "range": 70 },
+      "pros": ["Gear 5 reality-bending unpredictability", "Rubber body shrugs off blunt force", "Refuses to stay down"],
+      "weaknesses": ["Reckless and easy to provoke", "Gear 5 has a steep stamina cost"],
+      "wildcards": [{ "name": "Gear 5", "trigger_chance": 0.16, "effect_desc": "Cartoonish freedom and power.", "stat_boost": 24 }],
+      "signature_move": "Gum-Gum Bajrang Gun",
+      "tier": "top"
+    },
+    {
+      "id": "naruto-uzumaki|naruto",
+      "name": "Naruto Uzumaki",
+      "anime": "Naruto",
+      "medium": "anime",
+      "stats": { "power": 82, "speed": 84, "durability": 85, "technique": 80, "intelligence": 66, "stamina": 96, "range": 80 },
+      "pros": ["Massive chakra reserves", "Shadow clones overwhelm and gather intel", "Sage + Kurama modes"],
+      "weaknesses": ["Telegraphs Rasengan charge-up", "Can be emotionally manipulated"],
+      "wildcards": [{ "name": "Kurama Baryon Mode", "trigger_chance": 0.14, "effect_desc": "Explosive power at a heavy toll.", "stat_boost": 20 }],
+      "signature_move": "Rasengan",
+      "tier": "top"
+    },
+    {
+      "id": "isagi-yoichi|blue-lock",
+      "name": "Isagi Yoichi",
+      "anime": "Blue Lock",
+      "medium": "anime",
+      "stats": { "power": 24, "speed": 56, "durability": 30, "technique": 70, "intelligence": 94, "stamina": 76, "range": 40 },
+      "pros": ["Genius spatial awareness and prediction", "Adapts and 'devours' opponents' skills", "Ice-cold in the clutch"],
+      "weaknesses": ["No superhuman physicals whatsoever", "It's a soccer striker — minimal raw combat power"],
+      "wildcards": [{ "name": "Flow State", "trigger_chance": 0.22, "effect_desc": "Reads the field a step ahead of everyone.", "stat_boost": 12 }],
+      "signature_move": "Direct Shot (Meta Vision)",
+      "tier": "low"
+    }
+  ]
+}

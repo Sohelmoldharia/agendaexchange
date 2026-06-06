@@ -230,6 +230,7 @@
 <div class="wrap">
   <h1>Anime Power Scaling</h1>
   <div class="sub">AI Combat Profiler × 100-Battle Monte Carlo Engine</div>
+  <div class="sub" id="rosterLine" style="margin-top:-10px;color:#5fe6a0;">⚡ <span id="rosterCount">0</span> fighters in roster — instant lookup · AI scouts the rest</div>
 
   <!-- INPUT -->
   <section id="inputArea">
@@ -370,6 +371,28 @@ let state = { f1:null, f2:null, chart1:null, chart2:null };
 /* ---------- element helpers ---------- */
 const $ = id => document.getElementById(id);
 
+/* ============================================================
+   ROSTER DATABASE  (cache-first lookup, AI fallback)
+   ============================================================ */
+let ROSTER = new Map();
+const norm = s => String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
+async function loadRoster(){
+  try{
+    const r = await fetch("data/characters.json");
+    if(!r.ok) return;
+    const j = await r.json();
+    const list = j.characters || j || [];
+    list.forEach(c=>{
+      ROSTER.set(norm(c.name)+"|"+norm(c.anime), c);
+      if(!ROSTER.has(norm(c.name))) ROSTER.set(norm(c.name), c);
+    });
+    const el=$("rosterCount"); if(el) el.textContent=list.length;
+  }catch(e){ /* no DB yet — pure AI mode */ }
+}
+function rosterLookup(name, anime){
+  return ROSTER.get(norm(name)+"|"+norm(anime)) || ROSTER.get(norm(name)) || null;
+}
+
 /* ---------- settings UI ---------- */
 const DEFAULT_MODELS = {
   "anthropic-env":"claude-haiku-4-5",
@@ -509,6 +532,10 @@ function safeParseProfile(text, fallbackName, fallbackAnime){
 }
 
 async function scout(name, anime){
+  // 1) cache-first: instant + free if the character is in the roster DB
+  const hit = rosterLookup(name, anime);
+  if(hit) return JSON.parse(JSON.stringify(hit));
+  // 2) fallback: ask the AI (costs a call; needs a configured provider)
   const text = await callLLM(SYSTEM_PROMPT, buildPrompt(name,anime));
   return safeParseProfile(text, name, anime);
 }
@@ -842,6 +869,8 @@ $("fightBtn").addEventListener("click",startFight);
 $("rematchBtn").addEventListener("click",rematch);
 $("newBtn").addEventListener("click",newBattle);
 [ "n1","a1","n2","a2" ].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") startFight(); }));
+
+loadRoster();
 </script>
 </body>
 </html>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>⚙ Roster Admin — Anime Battle Simulator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#070710;--panel:#10101f;--line:rgba(120,140,255,.22);--neon1:#00f0ff;--neon2:#ff2bd6;--neon3:#ffd400;--good:#3dff8b;--bad:#ff4d5e;--ink:#eef;--mut:#8b93c9;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:system-ui,Arial,sans-serif;background:linear-gradient(160deg,var(--bg),#0c0c1c);color:var(--ink);min-height:100vh;}
+  header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;background:rgba(7,7,16,.92);backdrop-filter:blur(8px);z-index:20;}
+  header h1{font-size:18px;margin:0;letter-spacing:1px;background:linear-gradient(90deg,var(--neon1),var(--neon3),var(--neon2));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .stat-pills{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;}
+  .pill{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:4px 12px;color:var(--mut);}
+  .pill b{color:var(--ink);}
+  .pill.dirty{border-color:var(--neon3);color:var(--neon3);}
+  .grow{flex:1;}
+  button,select,input,textarea{font-family:inherit;}
+  .btn{border:none;cursor:pointer;border-radius:9px;padding:8px 14px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#06121a;background:linear-gradient(90deg,var(--neon1),#0af);transition:transform .1s,filter .15s;}
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.1);}
+  .btn.sec{background:#1b1b33;color:var(--ink);border:1px solid var(--line);}
+  .btn.warn{background:linear-gradient(90deg,var(--neon2),#a0f);color:#fff;}
+  .btn.gold{background:linear-gradient(90deg,var(--neon3),#ff9d00);}
+  .btn.sm{padding:5px 9px;font-size:12px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  main{padding:16px 18px 80px;max-width:1280px;margin:0 auto;}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .toolbar input[type=text]{flex:1;min-width:180px;background:#0a0a18;border:1px solid var(--line);color:#fff;border-radius:9px;padding:9px 12px;outline:none;}
+  .toolbar input[type=text]:focus{border-color:var(--neon1);}
+  .toolbar select{background:#0a0a18;border:1px solid var(--line);color:#fff;border-radius:9px;padding:9px 10px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid rgba(120,140,255,.1);}
+  th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:1px;cursor:pointer;user-select:none;}
+  tr:hover td{background:rgba(120,140,255,.05);}
+  .tier{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:800;text-transform:uppercase;}
+  .tier.low{background:#2a3340;color:#9fb0c5;} .tier.mid{background:#1d3a2a;color:#5fe6a0;}
+  .tier.high{background:#3a2d12;color:#ffce4d;} .tier.top{background:#3a1430;color:#ff7ae0;}
+  .tier.godtier{background:linear-gradient(90deg,#ffd400,#ff2bd6);color:#180014;}
+  .needs{color:var(--bad);font-weight:700;font-size:11px;}
+  .ok{color:var(--good);font-size:11px;}
+  .medium{color:var(--mut);font-size:11px;text-transform:uppercase;}
+  .pg{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px;color:var(--mut);font-size:13px;}
+  .pg button{background:#1b1b33;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer;}
+  .pg button:disabled{opacity:.4;cursor:default;}
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(4,4,12,.8);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:40;padding:16px;}
+  .modal.on{display:flex;}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:min(840px,100%);max-height:90vh;overflow:auto;padding:18px;}
+  .sheet h2{margin:0 0 12px;font-size:17px;}
+  .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr;}}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:10px 0 4px;}
+  .in{width:100%;background:#0a0a18;border:1px solid var(--line);color:#fff;border-radius:8px;padding:8px 10px;outline:none;}
+  .in:focus{border-color:var(--neon1);}
+  .statrow{display:flex;align-items:center;gap:10px;margin:5px 0;}
+  .statrow span{width:96px;font-size:12px;color:var(--mut);text-transform:uppercase;}
+  .statrow input[type=range]{flex:1;accent-color:var(--neon1);}
+  .statrow b{width:30px;text-align:right;font-variant-numeric:tabular-nums;}
+  .listedit{margin:4px 0;}
+  .listedit .row{display:flex;gap:6px;margin:4px 0;}
+  .listedit .row input{flex:1;}
+  .listedit .row button{background:#3a1430;border:none;color:#ff7ae0;border-radius:7px;width:30px;cursor:pointer;}
+  .addrow{background:#1b1b33;border:1px dashed var(--line);color:var(--mut);border-radius:7px;padding:5px;cursor:pointer;width:100%;font-size:12px;}
+  .wc{border:1px solid var(--line);border-radius:10px;padding:8px;margin:6px 0;}
+  .wc .r{display:flex;gap:6px;flex-wrap:wrap;}
+  .wc .r > div{flex:1;min-width:90px;}
+  .sheet .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+  .hint{font-size:12px;color:var(--mut);line-height:1.5;}
+  .err{color:var(--bad);font-size:13px;}
+  textarea.in{min-height:120px;font-family:ui-monospace,monospace;font-size:12px;}
+  .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .seg button{background:#0a0a18;color:var(--mut);border:none;padding:8px 12px;cursor:pointer;font-size:12px;}
+  .seg button.active{background:var(--neon1);color:#06121a;font-weight:700;}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚙ ROSTER ADMIN</h1>
+  <div class="stat-pills">
+    <span class="pill">Total <b id="pTotal">0</b></span>
+    <span class="pill">Complete <b id="pOk">0</b></span>
+    <span class="pill">Needs stats <b id="pNeeds">0</b></span>
+    <span class="pill" id="pDirty">Saved ✓</span>
+  </div>
+  <div class="grow"></div>
+  <button class="btn sec sm" id="btnSettings">⚙ AI</button>
+  <button class="btn gold sm" id="btnExport">⬇ Export JSON</button>
+</header>
+
+<main>
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search name or franchise…"/>
+    <select id="fMedium"><option value="">All media</option><option>anime</option><option>manga</option><option>cartoon</option><option>movie</option></select>
+    <select id="fTier"><option value="">All tiers</option><option>low</option><option>mid</option><option>high</option><option>top</option><option>godtier</option></select>
+    <select id="fStatus"><option value="">All</option><option value="needs">Needs stats</option><option value="ok">Complete</option></select>
+    <button class="btn sec sm" id="btnImport">⬆ Import</button>
+    <button class="btn sec sm" id="btnNew">＋ New</button>
+    <button class="btn warn sm" id="btnGenAll">✦ AI fill missing</button>
+    <button class="btn sec sm" id="btnDedupe">⧉ Dedupe</button>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th data-sort="name">Name</th>
+      <th data-sort="anime">Franchise</th>
+      <th data-sort="medium">Medium</th>
+      <th data-sort="tier">Tier</th>
+      <th data-sort="power">PWR</th>
+      <th>Status</th>
+      <th></th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="pg" id="pager"></div>
+</main>
+
+<!-- EDITOR -->
+<div class="modal" id="editor">
+  <div class="sheet">
+    <h2 id="edTitle">Edit Character</h2>
+    <div class="grid2">
+      <div>
+        <label>Name</label><input class="in" id="edName"/>
+        <label>Franchise</label><input class="in" id="edAnime"/>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1"><label>Medium</label>
+            <select class="in" id="edMedium"><option>anime</option><option>manga</option><option>cartoon</option><option>movie</option></select></div>
+          <div style="flex:1"><label>Tier</label>
+            <select class="in" id="edTier"><option>low</option><option>mid</option><option>high</option><option>top</option><option>godtier</option></select></div>
+        </div>
+        <label>Signature Move</label><input class="in" id="edSig"/>
+        <label>Stats</label>
+        <div id="edStats"></div>
+        <button class="btn warn sm" id="edAi" style="margin-top:8px">✦ Generate this with AI</button>
+        <span class="err" id="edAiErr"></span>
+      </div>
+      <div>
+        <label>Radar Preview</label>
+        <canvas id="edChart"></canvas>
+        <label>Strengths</label><div class="listedit" id="edPros"></div>
+        <label>Weaknesses</label><div class="listedit" id="edWeak"></div>
+        <label>Wildcards</label><div id="edWilds"></div>
+        <button class="addrow" id="edAddWild">＋ wildcard</button>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn sec" id="edDelete">Delete</button>
+      <div class="grow"></div>
+      <button class="btn sec" id="edCancel">Cancel</button>
+      <button class="btn" id="edSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT -->
+<div class="modal" id="importer">
+  <div class="sheet">
+    <h2>Import</h2>
+    <div class="seg" style="margin-bottom:10px">
+      <button class="active" data-mode="csv">Roster CSV</button>
+      <button data-mode="json">Profiles / DB JSON</button>
+    </div>
+    <div id="impCsv">
+      <p class="hint">Paste roster CSV — <code>name,franchise,medium</code> per line (header optional). New entries are flagged <b style="color:var(--bad)">needs stats</b>. Duplicates are skipped.</p>
+      <textarea class="in" id="impCsvText" placeholder="Goku,Dragon Ball,anime&#10;Gojo Satoru,Jujutsu Kaisen,anime"></textarea>
+    </div>
+    <div id="impJson" style="display:none">
+      <p class="hint">Paste a JSON array of profile objects (from Prompt 2) <em>or</em> a full <code>{ "characters": [...] }</code> DB. Matched by name+franchise; fills stats on existing, adds new.</p>
+      <textarea class="in" id="impJsonText" placeholder='[ { "name":"Goku","anime":"Dragon Ball","stats":{...}, ... } ]'></textarea>
+    </div>
+    <span class="err" id="impErr"></span>
+    <div class="foot">
+      <button class="btn sec" id="impCancel">Cancel</button>
+      <button class="btn" id="impDo">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="modal" id="settings">
+  <div class="sheet" style="width:min(520px,100%)">
+    <h2>AI Scout Settings</h2>
+    <label>Provider</label>
+    <select class="in" id="provider">
+      <option value="anthropic-env">Claude (this environment — no key)</option>
+      <option value="anthropic">Claude (with API key)</option>
+      <option value="gemini">Gemini (cheapest, with key)</option>
+      <option value="openai">OpenAI / ChatGPT (with key)</option>
+    </select>
+    <label>Model</label><input class="in" id="model" value="claude-haiku-4-5"/>
+    <div id="keyWrap"><label>API Key (memory only)</label><input class="in" id="apikey" type="password" autocomplete="off"/></div>
+    <p class="hint">Used by the “AI fill” buttons to generate stats for characters that have none. Keys are never persisted.</p>
+    <div class="foot"><button class="btn" id="setClose">Done</button></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================ STATE / IDB */
+const STAT_KEYS=["power","speed","durability","technique","intelligence","stamina","range"];
+const STAT_LABELS=["POWER","SPEED","DUR","TECH","INT","STAM","RANGE"];
+let DB=[];            // array of characters
+let dirty=false;
+let page=0, perPage=50, sortKey="name", sortDir=1, editingId=null, edChart=null;
+
+const $=id=>document.getElementById(id);
+const slug=s=>String(s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const mkId=(n,a)=>slug(n)+"|"+slug(a);
+const hasStats=c=>c.stats && STAT_KEYS.some(k=>Number(c.stats[k])>0);
+
+function idb(mode,key,val){return new Promise((res,rej)=>{const o=indexedDB.open("rosterAdmin",1);
+  o.onupgradeneeded=()=>o.result.createObjectStore("kv");
+  o.onerror=()=>rej(o.error);
+  o.onsuccess=()=>{const tx=o.result.transaction("kv",mode);const st=tx.objectStore("kv");
+    const r=mode==="readwrite"?st.put(val,key):st.get(key);
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);};});}
+
+async function save(){ await idb("readwrite","db",DB); setDirty(false); }
+function setDirty(v){ dirty=v; const p=$("pDirty"); if(v){p.textContent="Unsaved ●";p.classList.add("dirty");} else {p.textContent="Saved ✓";p.classList.remove("dirty");} }
+
+async function boot(){
+  let stored=null; try{ stored=await idb("readonly","db"); }catch(e){}
+  if(stored && stored.length){ DB=stored; }
+  else{
+    try{ const r=await fetch("data/characters.json"); const j=await r.json(); DB=(j.characters||j||[]); }
+    catch(e){ DB=[]; }
+    DB.forEach(normalize); await save();
+  }
+  DB.forEach(normalize);
+  render();
+}
+
+function normalize(c){
+  c.id=c.id||mkId(c.name,c.anime);
+  c.medium=c.medium||"anime";
+  c.stats=c.stats||{}; STAT_KEYS.forEach(k=>c.stats[k]=clamp(c.stats[k],0,100,0));
+  c.pros=Array.isArray(c.pros)?c.pros:[];
+  c.weaknesses=Array.isArray(c.weaknesses)?c.weaknesses:[];
+  c.wildcards=Array.isArray(c.wildcards)?c.wildcards:[];
+  c.signature_move=c.signature_move||"";
+  c.tier=["low","mid","high","top","godtier"].includes(c.tier)?c.tier:"mid";
+  return c;
+}
+function clamp(v,lo,hi,d){v=Number(v);if(!isFinite(v))v=d;return Math.max(lo,Math.min(hi,Math.round(v)));}
+
+/* ============================================================ RENDER */
+function filtered(){
+  const q=$("search").value.toLowerCase().trim();
+  const fm=$("fMedium").value, ft=$("fTier").value, fs=$("fStatus").value;
+  let list=DB.filter(c=>{
+    if(q && !(c.name.toLowerCase().includes(q)||c.anime.toLowerCase().includes(q))) return false;
+    if(fm && c.medium!==fm) return false;
+    if(ft && c.tier!==ft) return false;
+    if(fs==="needs" && hasStats(c)) return false;
+    if(fs==="ok" && !hasStats(c)) return false;
+    return true;
+  });
+  list.sort((a,b)=>{
+    let av,bv;
+    if(sortKey==="power"){av=a.stats.power;bv=b.stats.power;}
+    else {av=(a[sortKey]||"").toString().toLowerCase();bv=(b[sortKey]||"").toString().toLowerCase();}
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+  return list;
+}
+function render(){
+  const list=filtered();
+  const pages=Math.max(1,Math.ceil(list.length/perPage));
+  if(page>=pages) page=pages-1;
+  const slice=list.slice(page*perPage,(page+1)*perPage);
+  $("rows").innerHTML=slice.map(c=>`<tr>
+    <td><b>${esc(c.name)}</b></td>
+    <td>${esc(c.anime)}</td>
+    <td class="medium">${esc(c.medium)}</td>
+    <td><span class="tier ${c.tier}">${c.tier}</span></td>
+    <td>${hasStats(c)?c.stats.power:"—"}</td>
+    <td>${hasStats(c)?'<span class="ok">complete</span>':'<span class="needs">needs stats</span>'}</td>
+    <td><button class="btn sec sm" data-edit="${esc(c.id)}">edit</button></td>
+  </tr>`).join("") || `<tr><td colspan="7" style="color:var(--mut);padding:24px;text-align:center">No characters. Import a roster CSV to begin.</td></tr>`;
+  $("pager").innerHTML=`<button ${page<=0?"disabled":""} id="prev">‹ Prev</button>
+    <span>Page ${page+1} / ${pages} · ${list.length} shown · ${DB.length} total</span>
+    <button ${page>=pages-1?"disabled":""} id="next">Next ›</button>`;
+  const np=$("next"), pv=$("prev");
+  if(np)np.onclick=()=>{page++;render();}; if(pv)pv.onclick=()=>{page--;render();};
+  $("rows").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openEditor(b.dataset.edit));
+  $("pTotal").textContent=DB.length;
+  const ok=DB.filter(hasStats).length;
+  $("pOk").textContent=ok; $("pNeeds").textContent=DB.length-ok;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+$("search").oninput=()=>{page=0;render();};
+["fMedium","fTier","fStatus"].forEach(id=>$(id).onchange=()=>{page=0;render();});
+document.querySelectorAll("th[data-sort]").forEach(th=>th.onclick=()=>{
+  const k=th.dataset.sort; if(sortKey===k)sortDir*=-1; else {sortKey=k;sortDir=1;} render();});
+
+/* ============================================================ EDITOR */
+function blank(){return normalize({name:"",anime:"",medium:"anime"});}
+function openEditor(id){
+  const c=id?DB.find(x=>x.id===id):blank();
+  editingId=id||null;
+  $("edTitle").textContent=id?"Edit Character":"New Character";
+  $("edName").value=c.name; $("edAnime").value=c.anime;
+  $("edMedium").value=c.medium; $("edTier").value=c.tier; $("edSig").value=c.signature_move;
+  $("edStats").innerHTML=STAT_KEYS.map((k,i)=>`<div class="statrow"><span>${STAT_LABELS[i]}</span>
+    <input type="range" min="0" max="100" value="${c.stats[k]}" data-stat="${k}"/><b id="sv_${k}">${c.stats[k]}</b></div>`).join("");
+  $("edStats").querySelectorAll("input").forEach(inp=>inp.oninput=()=>{$("sv_"+inp.dataset.stat).textContent=inp.value;drawRadar();});
+  renderList("edPros",c.pros); renderList("edWeak",c.weaknesses);
+  renderWilds(c.wildcards);
+  $("edDelete").style.display=id?"":"none";
+  $("edAiErr").textContent="";
+  $("editor").classList.add("on");
+  drawRadar();
+}
+function renderList(boxId,arr){
+  const box=$(boxId);
+  box.innerHTML=arr.map((v,i)=>`<div class="row"><input class="in" value="${esc(v)}"/><button data-i="${i}">✕</button></div>`).join("")
+    +`<button class="addrow">＋ add</button>`;
+  box.querySelector(".addrow").onclick=()=>{arr.push("");renderList(boxId,arr);box._arr=arr;};
+  box._arr=arr;
+  box.querySelectorAll(".row").forEach((row,i)=>{
+    row.querySelector("input").oninput=e=>arr[i]=e.target.value;
+    row.querySelector("button").onclick=()=>{arr.splice(i,1);renderList(boxId,arr);};
+  });
+}
+function renderWilds(arr){
+  const box=$("edWilds"); box._arr=arr;
+  box.innerHTML=arr.map((w,i)=>`<div class="wc"><div class="r">
+    <div style="flex:2"><label>name</label><input class="in" data-w="${i}" data-f="name" value="${esc(w.name||"")}"/></div>
+    <div><label>chance</label><input class="in" data-w="${i}" data-f="trigger_chance" value="${w.trigger_chance??0.1}"/></div>
+    <div><label>boost</label><input class="in" data-w="${i}" data-f="stat_boost" value="${w.stat_boost??8}"/></div>
+    </div><label>effect</label><input class="in" data-w="${i}" data-f="effect_desc" value="${esc(w.effect_desc||"")}"/>
+    <button class="btn sec sm" data-del="${i}" style="margin-top:6px">remove</button></div>`).join("");
+  box.querySelectorAll("input").forEach(inp=>inp.oninput=()=>{
+    const w=arr[+inp.dataset.w], f=inp.dataset.f;
+    w[f]=(f==="trigger_chance"||f==="stat_boost")?Number(inp.value):inp.value;});
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{arr.splice(+b.dataset.del,1);renderWilds(arr);});
+}
+$("edAddWild").onclick=()=>{const a=$("edWilds")._arr;a.push({name:"",trigger_chance:0.1,effect_desc:"",stat_boost:8});renderWilds(a);};
+function drawRadar(){
+  const data=STAT_KEYS.map(k=>Number($("edStats").querySelector(`[data-stat="${k}"]`).value));
+  if(edChart)edChart.destroy();
+  edChart=new Chart($("edChart"),{type:"radar",data:{labels:STAT_LABELS,datasets:[{data,backgroundColor:"rgba(0,240,255,.22)",borderColor:"#00f0ff",borderWidth:2,pointRadius:2}]},
+    options:{plugins:{legend:{display:false}},scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:"rgba(150,160,255,.15)"},angleLines:{color:"rgba(150,160,255,.15)"},pointLabels:{color:"#b9c0f0",font:{size:9}}}},animation:false}});
+}
+function collectEditor(){
+  const c=editingId?DB.find(x=>x.id===editingId):blank();
+  c.name=$("edName").value.trim(); c.anime=$("edAnime").value.trim();
+  c.medium=$("edMedium").value; c.tier=$("edTier").value; c.signature_move=$("edSig").value.trim();
+  $("edStats").querySelectorAll("[data-stat]").forEach(inp=>c.stats[inp.dataset.stat]=clamp(inp.value,0,100,0));
+  c.pros=($("edPros")._arr||[]).map(s=>s.trim()).filter(Boolean);
+  c.weaknesses=($("edWeak")._arr||[]).map(s=>s.trim()).filter(Boolean);
+  c.wildcards=($("edWilds")._arr||[]).filter(w=>w.name).map(w=>({name:w.name,trigger_chance:Math.max(0,Math.min(1,Number(w.trigger_chance)||0.1)),effect_desc:w.effect_desc||"",stat_boost:clamp(w.stat_boost,0,30,8)}));
+  return c;
+}
+$("edSave").onclick=async()=>{
+  const c=collectEditor();
+  if(!c.name||!c.anime){$("edAiErr").textContent="Name and franchise required.";return;}
+  if(editingId){ /* in place */ }
+  else{ c.id=mkId(c.name,c.anime); if(DB.some(x=>x.id===c.id)){$("edAiErr").textContent="That character already exists.";return;} DB.push(c); }
+  setDirty(true); await save(); $("editor").classList.remove("on"); render();
+};
+$("edCancel").onclick=()=>$("editor").classList.remove("on");
+$("edDelete").onclick=async()=>{ if(editingId && confirm("Delete this character?")){DB=DB.filter(x=>x.id!==editingId);setDirty(true);await save();$("editor").classList.remove("on");render();} };
+$("btnNew").onclick=()=>openEditor(null);
+$("edAi").onclick=async()=>{
+  const name=$("edName").value.trim(), anime=$("edAnime").value.trim();
+  if(!name||!anime){$("edAiErr").textContent="Enter name + franchise first.";return;}
+  $("edAi").disabled=true; $("edAiErr").textContent="scouting…";
+  try{
+    const p=await scout(name,anime);
+    $("edTier").value=p.tier; $("edSig").value=p.signature_move;
+    STAT_KEYS.forEach(k=>{const inp=$("edStats").querySelector(`[data-stat="${k}"]`);inp.value=p.stats[k];$("sv_"+k).textContent=p.stats[k];});
+    renderList("edPros",p.pros); renderList("edWeak",p.weaknesses); renderWilds(p.wildcards); drawRadar();
+    $("edAiErr").textContent="✓ generated — review & Save";
+  }catch(e){$("edAiErr").textContent="✕ "+e.message;}
+  $("edAi").disabled=false;
+};
+
+/* ============================================================ IMPORT */
+$("btnImport").onclick=()=>$("importer").classList.add("on");
+$("impCancel").onclick=()=>$("importer").classList.remove("on");
+document.querySelectorAll("#importer .seg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#importer .seg button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  $("impCsv").style.display=b.dataset.mode==="csv"?"":"none";
+  $("impJson").style.display=b.dataset.mode==="json"?"":"none";
+});
+function parseCsvLine(line){
+  const out=[];let cur="",q=false;
+  for(let i=0;i<line.length;i++){const ch=line[i];
+    if(q){ if(ch==='"'&&line[i+1]==='"'){cur+='"';i++;} else if(ch==='"'){q=false;} else cur+=ch; }
+    else{ if(ch==='"')q=true; else if(ch===","){out.push(cur);cur="";} else cur+=ch; }}
+  out.push(cur); return out.map(s=>s.trim());
+}
+$("impDo").onclick=async()=>{
+  $("impErr").textContent="";
+  const mode=document.querySelector("#importer .seg button.active").dataset.mode;
+  try{
+    let added=0,filled=0,skipped=0;
+    if(mode==="csv"){
+      const lines=$("impCsvText").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+      for(let line of lines){
+        const cells=parseCsvLine(line);
+        if(/^name$/i.test(cells[0])) continue; // header
+        const [name,anime,medium]=cells;
+        if(!name||!anime) continue;
+        const id=mkId(name,anime);
+        if(DB.some(x=>x.id===id)){skipped++;continue;}
+        DB.push(normalize({name,anime,medium:(medium||"anime").toLowerCase(),id}));
+        added++;
+      }
+    } else {
+      let j=JSON.parse($("impJsonText").value);
+      const arr=Array.isArray(j)?j:(j.characters||[]);
+      for(const prof of arr){
+        if(!prof.name) continue;
+        const anime=prof.anime||prof.franchise||"";
+        const id=mkId(prof.name,anime);
+        const existing=DB.find(x=>x.id===id);
+        const clean=normalize({...prof,anime,id});
+        if(existing){ Object.assign(existing,clean); filled++; }
+        else { DB.push(clean); added++; }
+      }
+    }
+    setDirty(true); await save(); render();
+    $("importer").classList.remove("on");
+    $("impCsvText").value=""; $("impJsonText").value="";
+    alert(`Imported. Added ${added}, updated ${filled}, skipped ${skipped} dupes.`);
+  }catch(e){ $("impErr").textContent="Parse error: "+e.message; }
+};
+
+/* ============================================================ DEDUPE / EXPORT */
+$("btnDedupe").onclick=async()=>{
+  const seen=new Set(),out=[];
+  for(const c of DB){const id=c.id||mkId(c.name,c.anime); if(seen.has(id))continue; seen.add(id); c.id=id; out.push(c);}
+  const removed=DB.length-out.length; DB=out; setDirty(true); await save(); render();
+  alert(`Removed ${removed} duplicate(s).`);
+};
+$("btnExport").onclick=()=>{
+  const data={version:1,updated:new Date().toISOString().slice(0,10),characters:DB.map(c=>({
+    id:c.id,name:c.name,anime:c.anime,medium:c.medium,stats:c.stats,pros:c.pros,
+    weaknesses:c.weaknesses,wildcards:c.wildcards,signature_move:c.signature_move,tier:c.tier}))};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="characters.json";a.click();
+};
+
+/* ============================================================ AI FILL ALL */
+$("btnGenAll").onclick=async()=>{
+  const missing=DB.filter(c=>!hasStats(c));
+  if(!missing.length){alert("All characters already have stats.");return;}
+  if(!confirm(`Generate stats for ${missing.length} character(s) via the configured provider? This makes ${missing.length} API call(s).`))return;
+  let done=0,fail=0;
+  $("btnGenAll").disabled=true;
+  for(const c of missing){
+    try{ const p=await scout(c.name,c.anime); Object.assign(c,normalize({...p,anime:c.anime,id:c.id,medium:c.medium})); done++; }
+    catch(e){ fail++; if(fail>4){alert("Multiple failures ("+e.message+") — stopping. Check AI settings.");break;} }
+    $("btnGenAll").textContent=`✦ ${done}/${missing.length}…`;
+    if(done%5===0){setDirty(true);await save();render();}
+  }
+  setDirty(true); await save(); render();
+  $("btnGenAll").disabled=false; $("btnGenAll").textContent="✦ AI fill missing";
+  alert(`Done. Filled ${done}, failed ${fail}.`);
+};
+
+/* ============================================================ AI PROVIDER (shared) */
+const DEF_MODELS={"anthropic-env":"claude-haiku-4-5","anthropic":"claude-haiku-4-5","gemini":"gemini-2.0-flash","openai":"gpt-4o-mini"};
+$("btnSettings").onclick=()=>$("settings").classList.add("on");
+$("setClose").onclick=()=>$("settings").classList.remove("on");
+$("provider").onchange=e=>{$("model").value=DEF_MODELS[e.target.value]||"";$("keyWrap").style.display=e.target.value==="anthropic-env"?"none":"";};
+$("provider").dispatchEvent(new Event("change"));
+
+const SYS="You are a rigorous anime/cartoon/movie power-scaling analyst. Output ONLY raw JSON — no preamble, no markdown fences.";
+function prompt(name,anime){return `Generate a combat profile for "${name}" from "${anime}".
+Return STRICT JSON (no fences):
+{"name":"","anime":"","stats":{"power":0,"speed":0,"durability":0,"technique":0,"intelligence":0,"stamina":0,"range":0},"pros":["","",""],"weaknesses":["",""],"wildcards":[{"name":"","trigger_chance":0.0,"effect_desc":"","stat_boost":0}],"signature_move":"","tier":"low|mid|high|top|godtier"}
+Stats are integers 0-100. Be honest and balanced — do NOT make everything 95+. Scale street-level fighters far below universe-busters. 2 real weaknesses. 1-3 wildcards (trigger_chance 0-1, stat_boost 0-30). tier in low/mid/high/top/godtier. Output JSON now.`;}
+async function callLLM(system,p){
+  const provider=$("provider").value,model=$("model").value.trim(),key=$("apikey").value.trim();
+  if(provider==="anthropic-env"||provider==="anthropic"){
+    const h={"content-type":"application/json","anthropic-version":"2023-06-01"};
+    if(provider==="anthropic"){if(!key)throw new Error("Add Anthropic key");h["x-api-key"]=key;h["anthropic-dangerous-direct-browser-access"]="true";}
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:h,body:JSON.stringify({model,max_tokens:1000,system,messages:[{role:"user",content:p}]})});
+    if(!r.ok)throw new Error("Claude "+r.status); const d=await r.json(); return (d.content||[]).map(b=>b.text||"").join("");
+  }
+  if(provider==="gemini"){ if(!key)throw new Error("Add Gemini key");
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({system_instruction:{parts:[{text:system}]},contents:[{role:"user",parts:[{text:p}]}],generationConfig:{responseMimeType:"application/json",maxOutputTokens:1000}})});
+    if(!r.ok)throw new Error("Gemini "+r.status); const d=await r.json(); return (d?.candidates?.[0]?.content?.parts||[]).map(x=>x.text||"").join("");
+  }
+  if(provider==="openai"){ if(!key)throw new Error("Add OpenAI key");
+    const r=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+key},body:JSON.stringify({model,max_tokens:1000,response_format:{type:"json_object"},messages:[{role:"system",content:system},{role:"user",content:p}]})});
+    if(!r.ok)throw new Error("OpenAI "+r.status); const d=await r.json(); return d?.choices?.[0]?.message?.content||"";
+  }
+  throw new Error("Unknown provider");
+}
+async function scout(name,anime){
+  let t=(await callLLM(SYS,prompt(name,anime))).trim().replace(/```json/gi,"").replace(/```/g,"").trim();
+  const s=t.indexOf("{"),e=t.lastIndexOf("}"); if(s!==-1&&e!==-1)t=t.slice(s,e+1);
+  const o=JSON.parse(t);
+  const stats={}; STAT_KEYS.forEach(k=>stats[k]=clamp(o.stats?.[k],0,100,50));
+  let w=(Array.isArray(o.wildcards)?o.wildcards:[]).slice(0,3).map(x=>({name:String(x?.name||"Hidden Power"),trigger_chance:Math.max(0,Math.min(1,Number(x?.trigger_chance)||0.1)),effect_desc:String(x?.effect_desc||""),stat_boost:clamp(x?.stat_boost,0,30,8)}));
+  if(!w.length)w=[{name:"Second Wind",trigger_chance:0.12,effect_desc:"Hidden reserves.",stat_boost:8}];
+  return {name,anime,stats,pros:(o.pros||[]).slice(0,3).map(String).filter(Boolean),weaknesses:(o.weaknesses||[]).slice(0,2).map(String).filter(Boolean),wildcards:w,signature_move:String(o.signature_move||"—"),tier:["low","mid","high","top","godtier"].includes(String(o.tier||"").toLowerCase())?String(o.tier).toLowerCase():"mid"};
+}
+
+/* close modals on backdrop click */
+document.querySelectorAll(".modal").forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove("on");});
+
+boot();
+</script>
+</body>
+</html>
