@@ -69,3 +69,19 @@ Host `server.js` on any Node platform (Render, Railway, Fly, a VPS, etc.) with
 the env vars set. The character DB persists to `data/characters.json` on disk —
 on ephemeral/serverless hosts, point it at a persistent volume or swap the
 `loadDB`/`saveDB` functions for a KV store so the auto-cache survives restarts.
+
+## Battle engine & tests
+The fight logic lives in **`engine.js`** — a single source of truth shared by the
+game (browser) and the test harness (Node), so they can never drift. Beyond raw
+stats it models crits, dodges, counters, speed double-strikes, ranged opening
+pokes, stamina decay, intelligence-scaled variance, **exploits** (out-reading a
+dumber foe), and **hax/trick "gambits"** (reflection / illusion / soul / time /
+reality abilities) — so a weaker but cunning fighter can steal an upset *in some
+instances*, instead of losing 100–0 every time.
+
+Run the suite any time you tweak the engine:
+```bash
+node data/sim-test.js
+```
+It checks mirror matches are ~50/50, close matchups stay competitive, big
+mismatches are decisive, and clever/hax underdogs land real (but rare) upsets.

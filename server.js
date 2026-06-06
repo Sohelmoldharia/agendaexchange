@@ -182,6 +182,7 @@ const STATIC = {
   "/anime-battle-simulator.html":   ["anime-battle-simulator.html","text/html"],
   "/admin":                         ["admin.html","text/html"],
   "/admin.html":                    ["admin.html","text/html"],
+  "/engine.js":                     ["engine.js","application/javascript"],
   "/data/characters.json":          ["data/characters.json","application/json"],
 };
 function serveStatic(res, file, type){

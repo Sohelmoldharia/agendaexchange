@@ -10,6 +10,7 @@
 <meta property="og:type" content="website"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="engine.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap');
 :root{
@@ -392,72 +393,11 @@ async function scout(name, anime){
 }
 
 /* ============================================================
-   BATTLE SIMULATION ENGINE  (pure JS, client-side)
+   BATTLE SIMULATION ENGINE
+   (lives in engine.js — shared with the Node test harness so
+    the game and the tests run the EXACT same code. Provides the
+    globals: simulateBattle, simulateDetailed, runMonteCarlo)
    ============================================================ */
-function gaussian(mean, std){
-  let u=0,v=0;
-  while(u===0) u=Math.random();
-  while(v===0) v=Math.random();
-  return mean + std*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
-}
-
-// returns "f1" | "f2" | "draw"
-function simulateBattle(A, B){
-  let hpA=100, hpB=100;
-  const sA=A.stats, sB=B.stats;
-
-  // first-strike weighting blends speed + a touch of range
-  const initA = sA.speed*0.85 + sA.range*0.15;
-  const initB = sB.speed*0.85 + sB.range*0.15;
-
-  function strike(atk, def, hpDef, turn){
-    let pw=atk.stats.power, tq=atk.stats.technique;
-    // stamina decay over long fights — low stamina decays faster
-    const decay = Math.max(0.55, 1 - turn*(1 - atk.stats.stamina/100)*0.012);
-    pw*=decay; tq*=decay;
-    // wildcard: temporary boost this turn
-    let boost=0, wc=null;
-    for(const w of atk.wildcards){
-      if(Math.random() < w.trigger_chance){ boost+=w.stat_boost; wc=w; }
-    }
-    pw=Math.min(100,pw+boost); tq=Math.min(100,tq+boost);
-
-    // dodge: defender evades using speed + battle IQ
-    const dodgeChance = Math.max(0, Math.min(0.4,
-      (def.stats.speed - atk.stats.speed)/320 + def.stats.intelligence/700));
-    if(Math.random() < dodgeChance) return {dmg:0, hp:hpDef};
-
-    const offense = pw*0.6 + tq*0.4;
-    // higher intelligence on attacker = more consistent (less self-variance)
-    const variance = 8 - atk.stats.intelligence*0.03;
-    let dmg = (offense - def.stats.durability*0.5)*0.34 + gaussian(0, Math.max(3,variance));
-    dmg = Math.max(1, Math.min(60, dmg));
-    return {dmg, hp: hpDef - dmg};
-  }
-
-  for(let turn=0; turn<50; turn++){
-    // who acts first (probabilistic, ratio based)
-    const aFirst = Math.random() < initA/(initA+initB);
-    const first = aFirst ? "A":"B";
-
-    if(first==="A"){
-      let r=strike(A,B,hpB,turn); hpB=r.hp; if(hpB<=0) return "f1";
-      r=strike(B,A,hpA,turn); hpA=r.hp; if(hpA<=0) return "f2";
-    } else {
-      let r=strike(B,A,hpA,turn); hpA=r.hp; if(hpA<=0) return "f2";
-      r=strike(A,B,hpB,turn); hpB=r.hp; if(hpB<=0) return "f1";
-    }
-  }
-  // turn cap reached -> compare HP
-  if(Math.abs(hpA-hpB) < 0.5) return "draw";
-  return hpA>hpB ? "f1":"f2";
-}
-
-function runMonteCarlo(A,B,n=100){
-  const seq=[];
-  for(let i=0;i<n;i++) seq.push(simulateBattle(A,B));
-  return seq;
-}
 
 /* ============================================================
    RADAR CHARTS
