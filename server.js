@@ -190,11 +190,35 @@ function serveStatic(res, file, type){
     res.writeHead(200,{"content-type":type,"cache-control":"no-cache"}); res.end(buf);
   });
 }
+function ogEsc(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function decodeR(s){ try{ s=String(s).replace(/-/g,"+").replace(/_/g,"/"); return JSON.parse(Buffer.from(s,"base64").toString("utf8")); }catch(e){ return null; } }
+function serveShared(res, fullUrl){
+  fs.readFile(path.join(ROOT,"anime-battle-simulator.html"),"utf8",(err,html)=>{
+    if(err){ res.writeHead(404); res.end("not found"); return; }
+    const rp=new URLSearchParams(fullUrl.slice(fullUrl.indexOf("?")+1)).get("r");
+    const d=decodeR(rp);
+    if(d && d.a && d.b && d.w){
+      const win=d.w[0]>=d.w[1]?d.a[0]:d.b[0];
+      const title=`${d.a[0]} ${d.w[0]}–${d.w[1]} ${d.b[0]} · ${d.v||"Battle Result"}`;
+      const desc=`Who wins — ${d.a[0]} or ${d.b[0]}? The simulator says ${win} takes it ${d.w[0]}–${d.w[1]} over 100 battles. Run your own.`;
+      html=html
+        .replace(/<meta property="og:title" content="[^"]*"\/>/, `<meta property="og:title" content="${ogEsc(title)}"/>`)
+        .replace(/<meta property="og:description" content="[^"]*"\/>/, `<meta property="og:description" content="${ogEsc(desc)}"/>`)
+        .replace(/<meta name="description" content="[^"]*"\/>/, `<meta name="description" content="${ogEsc(desc)}"/>`)
+        .replace(/<title>[^<]*<\/title>/, `<title>${ogEsc(title)}</title>`);
+    }
+    res.writeHead(200,{"content-type":"text/html","cache-control":"no-cache"}); res.end(html);
+  });
+}
 
 /* ---------- request handler ---------- */
 const server = http.createServer(async (req,res)=>{
   const url = req.url.split("?")[0];
 
+  // shared-result link → serve the game with matchup-specific OG tags (link unfurls)
+  if(req.method==="GET" && (url==="/"||url==="/index.html"||url==="/anime-battle-simulator.html") && req.url.includes("?r=")){
+    return serveShared(res, req.url);
+  }
   if(req.method==="GET" && STATIC[url]){ return serveStatic(res, STATIC[url][0], STATIC[url][1]); }
 
   /* ---- server AI-key config (driven by the admin panel) ---- */
