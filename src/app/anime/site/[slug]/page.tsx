@@ -11,7 +11,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/format";
 import { KIND_META, STATUS_META } from "@/lib/anime/meta";
-import { getAllSites, getSite, isBlocked } from "@/lib/anime/sites";
+import {
+  emojiFor,
+  gradientFor,
+  getAllSites,
+  getSite,
+  isBlocked,
+} from "@/lib/anime/sites";
 import { BlockedBadge, StatusBadge } from "@/components/anime/StatusBadge";
 import { SiteCard } from "@/components/anime/SiteCard";
 
@@ -44,6 +50,7 @@ export default async function SiteDetail({
 
   const kind = KIND_META[site.kind];
   const blocked = isBlocked(site);
+  const gradient = gradientFor(site);
   const related = getAllSites()
     .filter((s) => s.slug !== site.slug && s.kind === site.kind)
     .slice(0, 3);
@@ -62,17 +69,17 @@ export default async function SiteDetail({
         <div
           className={cn(
             "pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-br opacity-20 blur-3xl",
-            site.gradient,
+            gradient,
           )}
         />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
           <span
             className={cn(
               "grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br text-3xl shadow-lg ring-1 ring-inset ring-white/20",
-              site.gradient,
+              gradient,
             )}
           >
-            {site.emoji}
+            {emojiFor(site)}
           </span>
           <div className="min-w-0 flex-1">
             <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">

@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { cn } from "@/lib/format";
 import { KIND_META } from "@/lib/anime/meta";
-import { isBlocked, type AnimeSite } from "@/lib/anime/sites";
+import {
+  emojiFor,
+  gradientFor,
+  isBlocked,
+  type AnimeSite,
+} from "@/lib/anime/sites";
 import { BlockedBadge, StatusBadge } from "./StatusBadge";
 
 export function SiteCard({ site }: { site: AnimeSite }) {
   const kind = KIND_META[site.kind];
+  const gradient = gradientFor(site);
   return (
     <Link
       href={`/anime/site/${site.slug}`}
@@ -14,17 +20,17 @@ export function SiteCard({ site }: { site: AnimeSite }) {
       <div
         className={cn(
           "pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br opacity-20 blur-3xl",
-          site.gradient,
+          gradient,
         )}
       />
       <div className="relative flex items-start gap-3">
         <span
           className={cn(
             "grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-xl shadow-lg ring-1 ring-inset ring-white/20",
-            site.gradient,
+            gradient,
           )}
         >
-          {site.emoji}
+          {emojiFor(site)}
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-bold text-white">{site.name}</h3>
