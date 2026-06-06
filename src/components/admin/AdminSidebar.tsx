@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   LayoutDashboard,
   Layers,
   ScrollText,
+  Settings,
   Sparkles,
   TrendingUp,
   Users,
@@ -19,6 +21,8 @@ const ITEMS = [
   { href: "/admin/series", label: "Series", Icon: Layers },
   { href: "/admin/users", label: "Users", Icon: Users },
   { href: "/admin/orders", label: "Orders", Icon: ScrollText },
+  { href: "/admin/market", label: "Market", Icon: Settings },
+  { href: "/admin/audit", label: "Audit log", Icon: Activity },
 ];
 
 export function AdminSidebar() {

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/Avatar";
 import {
@@ -9,24 +11,38 @@ import {
 
 const PAGE_SIZE = 50;
 
-export default async function AdminOrdersPage() {
-  const orders = await prisma.order.findMany({
-    take: PAGE_SIZE,
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: { select: { username: true } },
-      stock: {
-        select: { name: true, ticker: true, emoji: true, gradient: true },
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+  const skip = (page - 1) * PAGE_SIZE;
+
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      take: PAGE_SIZE,
+      skip,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { username: true } },
+        stock: {
+          select: { name: true, ticker: true, emoji: true, gradient: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.order.count(),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-bold text-white">Orders</h2>
         <p className="text-sm text-zinc-500">
-          Latest {orders.length} trades across all users.
+          {formatNumber(total)} trades total. Showing page {page} of{" "}
+          {totalPages}.
         </p>
       </div>
 
@@ -64,10 +80,16 @@ export default async function AdminOrdersPage() {
                 <td className="px-4 py-3 text-zinc-300">@{o.user.username}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <Avatar emoji={o.stock.emoji} gradient={o.stock.gradient} size="sm" />
+                    <Avatar
+                      emoji={o.stock.emoji}
+                      gradient={o.stock.gradient}
+                      size="sm"
+                    />
                     <div>
                       <div className="text-zinc-100">{o.stock.name}</div>
-                      <div className="font-mono text-xs text-zinc-500">{o.stock.ticker}</div>
+                      <div className="font-mono text-xs text-zinc-500">
+                        {o.stock.ticker}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -97,6 +119,36 @@ export default async function AdminOrdersPage() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-zinc-400">
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Link
+              href={`/admin/orders?page=${Math.max(1, page - 1)}`}
+              aria-disabled={page === 1}
+              className={cn(
+                "btn-ghost",
+                page === 1 && "pointer-events-none opacity-40",
+              )}
+            >
+              <ChevronLeft className="h-4 w-4" /> Newer
+            </Link>
+            <Link
+              href={`/admin/orders?page=${Math.min(totalPages, page + 1)}`}
+              aria-disabled={page === totalPages}
+              className={cn(
+                "btn-ghost",
+                page === totalPages && "pointer-events-none opacity-40",
+              )}
+            >
+              Older <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
