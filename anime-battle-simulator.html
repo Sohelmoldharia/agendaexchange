@@ -659,14 +659,18 @@ function makeRadar(canvasId, profile, color){
    ============================================================ */
 function renderCard(idx, p, color){
   $(`c${idx}name`).textContent=p.name;
-  $(`c${idx}anime`).textContent=p.anime;
-  const tier=$(`c${idx}tier`); tier.textContent=p.tier; tier.className="tier "+p.tier;
-  $(`c${idx}sig`).innerHTML=`<b>Signature:</b> ${escapeHtml(p.signature_move)}`;
+  $(`c${idx}anime`).textContent=p.anime + (p.role? "  ·  "+p.role : "");
+  const tier=$(`c${idx}tier`); tier.textContent=(p.power_tier||p.tier); tier.className="tier "+(p.tier||"mid");
+  $(`c${idx}sig`).innerHTML=`<b>Signature:</b> ${escapeHtml(p.signature_move||"—")}`;
 
   let html="";
-  if(p.pros.length){ html+=`<span class="h">Strengths</span>`; p.pros.forEach(x=> html+=`<div class="pro">▲ ${escapeHtml(x)}</div>`); }
-  if(p.weaknesses.length){ html+=`<span class="h">Weaknesses</span>`; p.weaknesses.forEach(x=> html+=`<div class="weak">▼ ${escapeHtml(x)}</div>`); }
-  if(p.wildcards.length){ html+=`<span class="h">Wildcards</span>`; p.wildcards.forEach(w=> html+=`<div style="color:#ffd86b">✦ ${escapeHtml(w.name)} <span style="color:#727aac">(${Math.round(w.trigger_chance*100)}%/turn, +${w.stat_boost})</span></div>`); }
+  const powers=p.powers||[], pros=p.pros||[], weaks=p.weaknesses||[], wilds=p.wildcards||[];
+  if(powers.length){ html+=`<span class="h">Powers</span><div style="color:#bcdcff">${powers.map(escapeHtml).join(" · ")}</div>`; }
+  if(pros.length){ html+=`<span class="h">Strengths</span>`; pros.forEach(x=> html+=`<div class="pro">▲ ${escapeHtml(x)}</div>`); }
+  if(weaks.length){ html+=`<span class="h">Weaknesses</span>`; weaks.forEach(x=> html+=`<div class="weak">▼ ${escapeHtml(x)}</div>`); }
+  if(wilds.length){ html+=`<span class="h">Wildcards</span>`; wilds.forEach(w=> html+=`<div style="color:#ffd86b">✦ ${escapeHtml(w.name)} <span style="color:#727aac">(${Math.round(w.trigger_chance*100)}%/turn, +${w.stat_boost})</span></div>`); }
+  if(p.cross_medium_note){ html+=`<span class="h">Cross-Medium Note</span><div style="color:#9aa3d8;font-style:italic">${escapeHtml(p.cross_medium_note)}</div>`; }
+  if(p.confidence){ html+=`<div style="margin-top:8px;color:#727aac;font-size:11px">scaling confidence: ${escapeHtml(p.confidence)}</div>`; }
   $(`c${idx}pw`).innerHTML=html;
 
   if(idx===1){ if(state.chart1) state.chart1.destroy(); state.chart1=makeRadar("chart1",p,color); }

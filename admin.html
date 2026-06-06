@@ -105,6 +105,7 @@
       <th data-sort="name">Name</th>
       <th data-sort="anime">Franchise</th>
       <th data-sort="medium">Medium</th>
+      <th data-sort="role">Role</th>
       <th data-sort="tier">Tier</th>
       <th data-sort="power">PWR</th>
       <th>Status</th>
@@ -126,10 +127,22 @@
         <div style="display:flex;gap:10px;">
           <div style="flex:1"><label>Medium</label>
             <select class="in" id="edMedium"><option>anime</option><option>manga</option><option>cartoon</option><option>movie</option></select></div>
-          <div style="flex:1"><label>Tier</label>
-            <select class="in" id="edTier"><option>low</option><option>mid</option><option>high</option><option>top</option><option>godtier</option></select></div>
+          <div style="flex:1"><label>Role</label><input class="in" id="edRole" placeholder="Hero, Villain…"/></div>
         </div>
-        <label>Signature Move</label><input class="in" id="edSig"/>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1"><label>Power Tier</label>
+            <select class="in" id="edPTier"><option value="">—</option><option>Universal</option><option>Star</option><option>Planet</option><option>Continent</option><option>Island</option><option>City</option><option>Building</option><option>Wall</option><option>Human</option></select></div>
+          <div style="flex:1"><label>Sim Tier</label>
+            <select class="in" id="edTier"><option>low</option><option>mid</option><option>high</option><option>top</option><option>godtier</option></select></div>
+          <div style="flex:1"><label>Confidence</label>
+            <select class="in" id="edConf"><option value="">—</option><option>High</option><option>Med</option><option>Low</option></select></div>
+        </div>
+        <label>Powers (comma-separated)</label><input class="in" id="edPowers" placeholder="flight, ki blasts, …"/>
+        <label>Signature Move / Abilities</label><input class="in" id="edSig"/>
+        <label>Cross-Medium Note</label><input class="in" id="edXnote"/>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <button class="btn sec sm" id="edDerive" type="button">↻ Derive stats from Power Tier</button>
+        </div>
         <label>Stats</label>
         <div id="edStats"></div>
         <button class="btn warn sm" id="edAi" style="margin-top:8px">✦ Generate this with AI</button>
@@ -239,7 +252,28 @@ function normalize(c){
   c.wildcards=Array.isArray(c.wildcards)?c.wildcards:[];
   c.signature_move=c.signature_move||"";
   c.tier=["low","mid","high","top","godtier"].includes(c.tier)?c.tier:"mid";
+  c.role=c.role||"";
+  c.power_tier=c.power_tier||"";
+  c.confidence=c.confidence||"";
+  c.cross_medium_note=c.cross_medium_note||"";
+  c.powers=Array.isArray(c.powers)?c.powers:[];
+  c.signature_abilities=Array.isArray(c.signature_abilities)?c.signature_abilities:[];
+  c.stats_source=c.stats_source||"manual";
   return c;
+}
+
+/* ---- shared stat derivation (mirrors data/ingest.mjs) ---- */
+const PT_LADDER={universal:{base:97,enum:"godtier",boost:16},star:{base:90,enum:"godtier",boost:16},planet:{base:84,enum:"top",boost:14},continent:{base:76,enum:"top",boost:14},island:{base:68,enum:"high",boost:12},city:{base:58,enum:"high",boost:11},building:{base:46,enum:"mid",boost:10},wall:{base:34,enum:"low",boost:8},human:{base:24,enum:"low",boost:8}};
+const ptInfo=t=>PT_LADDER[String(t||"").toLowerCase().trim()]||PT_LADDER.city;
+const POSKW={power:["destruction","planet","universe","universal","reality","overwhelming","godlike","omnipotent","immense","devastating","destroy"],speed:["speed","fast","flight","fly","teleport","instant","lightning","sonic","quick","agile","blitz","swift","warp","velocity","hypersonic"],durability:["durable","tough","invulnerable","regenerat","armor","tank","indestructible","hardened","immortal","healing","resilient"],technique:["master","skilled","technique","precision","swordsm","martial","tactic","expert","marksman","trained","disciplined","combat","prodigy"],intelligence:["genius","tactic","strateg","intelligen","mastermind","planner","analytic","calculat","scientist","leader","cunning","smart"],stamina:["stamina","endless","limitless","endurance","regenerat","immortal","tireless","infinite","healing","relentless"],range:["ranged","beam","blast","projectile","long-range","telekinesis","magic","energy","cannon","missile","gun","bow","laser","spell","summon","aura"]};
+const NEGKW={power:[],speed:["slow","sluggish","immobile"],durability:["fragile","glass","squishy","frail","mortal","vulnerable"],technique:["crude","untrained","wild","sloppy","clumsy"],intelligence:["naive","reckless","arrogant","overconfiden","impulsive","hubris","pride","gullible"],stamina:["drain","fatigue","tires","exhaust","time limit","sickly","stamina"],range:["melee","close-range","hand-to-hand","brawler","short range"]};
+const kwHits=(t,l)=>l.reduce((n,w)=>n+(t.includes(w)?1:0),0);
+function ptJitter(seed,stat){let h=2166136261,s=seed+"|"+stat;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return ((h>>>0)%9)-4;}
+function deriveStats(name,tierName,posText,negText){
+  const B=ptInfo(tierName).base, soft=50+(B-50)*0.45, n={};
+  STAT_KEYS.forEach(k=>{n[k]=Math.max(-22,Math.min(22,7*kwHits(posText,POSKW[k])-7*kwHits(negText,NEGKW[k])));});
+  const raw={power:B+Math.min(10,Math.max(0,n.power)),speed:soft+n.speed,durability:(B-3)+n.durability,technique:soft+n.technique,intelligence:48+0.25*(B-50)+n.intelligence,stamina:soft+n.stamina,range:(soft-4)+n.range};
+  const o={}; STAT_KEYS.forEach(k=>o[k]=clamp(raw[k]+ptJitter(name,k),0,100,50)); return o;
 }
 function clamp(v,lo,hi,d){v=Number(v);if(!isFinite(v))v=d;return Math.max(lo,Math.min(hi,Math.round(v)));}
 
@@ -272,11 +306,12 @@ function render(){
     <td><b>${esc(c.name)}</b></td>
     <td>${esc(c.anime)}</td>
     <td class="medium">${esc(c.medium)}</td>
-    <td><span class="tier ${c.tier}">${c.tier}</span></td>
+    <td class="medium">${esc(c.role||"")}</td>
+    <td><span class="tier ${c.tier}">${esc(c.power_tier||c.tier)}</span></td>
     <td>${hasStats(c)?c.stats.power:"—"}</td>
     <td>${hasStats(c)?'<span class="ok">complete</span>':'<span class="needs">needs stats</span>'}</td>
     <td><button class="btn sec sm" data-edit="${esc(c.id)}">edit</button></td>
-  </tr>`).join("") || `<tr><td colspan="7" style="color:var(--mut);padding:24px;text-align:center">No characters. Import a roster CSV to begin.</td></tr>`;
+  </tr>`).join("") || `<tr><td colspan="8" style="color:var(--mut);padding:24px;text-align:center">No characters. Import a roster CSV to begin.</td></tr>`;
   $("pager").innerHTML=`<button ${page<=0?"disabled":""} id="prev">‹ Prev</button>
     <span>Page ${page+1} / ${pages} · ${list.length} shown · ${DB.length} total</span>
     <button ${page>=pages-1?"disabled":""} id="next">Next ›</button>`;
@@ -302,6 +337,8 @@ function openEditor(id){
   $("edTitle").textContent=id?"Edit Character":"New Character";
   $("edName").value=c.name; $("edAnime").value=c.anime;
   $("edMedium").value=c.medium; $("edTier").value=c.tier; $("edSig").value=c.signature_move;
+  $("edRole").value=c.role||""; $("edPTier").value=c.power_tier||""; $("edConf").value=c.confidence||"";
+  $("edPowers").value=(c.powers||[]).join(", "); $("edXnote").value=c.cross_medium_note||"";
   $("edStats").innerHTML=STAT_KEYS.map((k,i)=>`<div class="statrow"><span>${STAT_LABELS[i]}</span>
     <input type="range" min="0" max="100" value="${c.stats[k]}" data-stat="${k}"/><b id="sv_${k}">${c.stats[k]}</b></div>`).join("");
   $("edStats").querySelectorAll("input").forEach(inp=>inp.oninput=()=>{$("sv_"+inp.dataset.stat).textContent=inp.value;drawRadar();});
@@ -337,6 +374,14 @@ function renderWilds(arr){
   box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{arr.splice(+b.dataset.del,1);renderWilds(arr);});
 }
 $("edAddWild").onclick=()=>{const a=$("edWilds")._arr;a.push({name:"",trigger_chance:0.1,effect_desc:"",stat_boost:8});renderWilds(a);};
+$("edDerive").onclick=()=>{
+  const pt=$("edPTier").value||"City";
+  const pos=($("edPowers").value+" "+($("edPros")._arr||[]).join(" ")+" "+$("edRole").value).toLowerCase();
+  const neg=(($("edWeak")._arr||[]).join(" ")).toLowerCase();
+  const s=deriveStats($("edName").value||"x", pt, pos, neg);
+  STAT_KEYS.forEach(k=>{const inp=$("edStats").querySelector(`[data-stat="${k}"]`);inp.value=s[k];$("sv_"+k).textContent=s[k];});
+  $("edTier").value=ptInfo(pt).enum; drawRadar();
+};
 function drawRadar(){
   const data=STAT_KEYS.map(k=>Number($("edStats").querySelector(`[data-stat="${k}"]`).value));
   if(edChart)edChart.destroy();
@@ -347,6 +392,10 @@ function collectEditor(){
   const c=editingId?DB.find(x=>x.id===editingId):blank();
   c.name=$("edName").value.trim(); c.anime=$("edAnime").value.trim();
   c.medium=$("edMedium").value; c.tier=$("edTier").value; c.signature_move=$("edSig").value.trim();
+  c.role=$("edRole").value.trim(); c.power_tier=$("edPTier").value; c.confidence=$("edConf").value;
+  c.cross_medium_note=$("edXnote").value.trim();
+  c.powers=$("edPowers").value.split(",").map(s=>s.trim()).filter(Boolean);
+  c.stats_source="manual";
   $("edStats").querySelectorAll("[data-stat]").forEach(inp=>c.stats[inp.dataset.stat]=clamp(inp.value,0,100,0));
   c.pros=($("edPros")._arr||[]).map(s=>s.trim()).filter(Boolean);
   c.weaknesses=($("edWeak")._arr||[]).map(s=>s.trim()).filter(Boolean);
@@ -399,16 +448,41 @@ $("impDo").onclick=async()=>{
   try{
     let added=0,filled=0,skipped=0;
     if(mode==="csv"){
-      const lines=$("impCsvText").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-      for(let line of lines){
-        const cells=parseCsvLine(line);
-        if(/^name$/i.test(cells[0])) continue; // header
-        const [name,anime,medium]=cells;
+      const lines=$("impCsvText").value.split(/\r?\n/).filter(l=>l.trim().length);
+      if(!lines.length) throw new Error("empty CSV");
+      const h0=parseCsvLine(lines[0]); const isHeader=/^name$/i.test(h0[0]);
+      let map={name:0,franchise:1,medium:2};
+      if(isHeader){ map={}; h0.forEach((h,i)=>map[h.toLowerCase().trim()]=i); }
+      const get=(cells,k)=>{const i=map[k];return i==null?"":(cells[i]||"").trim();};
+      const splitL=s=>String(s||"").split(/[;,]/).map(x=>x.trim()).filter(Boolean);
+      for(let r=isHeader?1:0;r<lines.length;r++){
+        const cells=parseCsvLine(lines[r]);
+        const name=get(cells,"name"), anime=get(cells,"franchise");
         if(!name||!anime) continue;
         const id=mkId(name,anime);
-        if(DB.some(x=>x.id===id)){skipped++;continue;}
-        DB.push(normalize({name,anime,medium:(medium||"anime").toLowerCase(),id}));
-        added++;
+        const pt=get(cells,"power tier"), role=get(cells,"role"), powers=splitL(get(cells,"powers"));
+        const strengths=splitL(get(cells,"strengths")), weaks=splitL(get(cells,"weaknesses")), sigs=splitL(get(cells,"signature abilities"));
+        const rec=normalize({ id,name,anime, medium:(get(cells,"medium")||"anime").toLowerCase(),
+          role, power_tier:pt, confidence:get(cells,"confidence"), cross_medium_note:get(cells,"cross-medium note"),
+          powers, signature_abilities:sigs, signature_move:sigs.join(", "),
+          pros:strengths.slice(0,3), weaknesses:weaks.slice(0,3) });
+        if(pt){
+          rec.stats=deriveStats(name,pt,(get(cells,"powers")+" "+get(cells,"strengths")+" "+role).toLowerCase(),get(cells,"weaknesses").toLowerCase());
+          rec.tier=ptInfo(pt).enum; rec.stats_source="derived";
+          const b=ptInfo(pt).boost;
+          rec.wildcards=sigs.length?[{name:sigs[0],trigger_chance:0.15,effect_desc:"Unleashes "+sigs[0]+".",stat_boost:b}]:[{name:"Hidden Reserves",trigger_chance:0.12,effect_desc:"Digs deep.",stat_boost:b}];
+        }
+        const ex=DB.find(x=>x.id===id);
+        if(ex){
+          const keep=hasStats(ex)&&ex.stats_source!=="derived";
+          ex.role=ex.role||rec.role; ex.power_tier=ex.power_tier||rec.power_tier; ex.confidence=ex.confidence||rec.confidence;
+          ex.cross_medium_note=ex.cross_medium_note||rec.cross_medium_note;
+          ex.powers=(ex.powers&&ex.powers.length)?ex.powers:rec.powers;
+          ex.signature_abilities=(ex.signature_abilities&&ex.signature_abilities.length)?ex.signature_abilities:rec.signature_abilities;
+          ex.pros=(ex.pros&&ex.pros.length)?ex.pros:rec.pros; ex.weaknesses=(ex.weaknesses&&ex.weaknesses.length)?ex.weaknesses:rec.weaknesses;
+          if(!keep && rec.stats){ ex.stats=rec.stats; ex.tier=rec.tier; ex.stats_source="derived"; ex.wildcards=rec.wildcards; }
+          filled++;
+        } else { DB.push(rec); added++; }
       }
     } else {
       let j=JSON.parse($("impJsonText").value);
@@ -439,8 +513,10 @@ $("btnDedupe").onclick=async()=>{
 };
 $("btnExport").onclick=()=>{
   const data={version:1,updated:new Date().toISOString().slice(0,10),characters:DB.map(c=>({
-    id:c.id,name:c.name,anime:c.anime,medium:c.medium,stats:c.stats,pros:c.pros,
-    weaknesses:c.weaknesses,wildcards:c.wildcards,signature_move:c.signature_move,tier:c.tier}))};
+    id:c.id,name:c.name,anime:c.anime,medium:c.medium,role:c.role,power_tier:c.power_tier,tier:c.tier,
+    confidence:c.confidence,cross_medium_note:c.cross_medium_note,powers:c.powers,
+    stats:c.stats,stats_source:c.stats_source,pros:c.pros,weaknesses:c.weaknesses,
+    signature_abilities:c.signature_abilities,signature_move:c.signature_move,wildcards:c.wildcards}))};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="characters.json";a.click();
 };

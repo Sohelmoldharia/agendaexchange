@@ -5,10 +5,31 @@ cartoon, movie — **no comics**) so the simulator does instant, free, consisten
 lookups in the browser. Live AI is only a fallback for characters not in the DB.
 
 ```
-Roster (names)  ──▶  Profiles (stats JSON)  ──▶  characters.json  ──▶  app
-   Prompt 1            Prompt 2                    ingest script       cache-first
- (chat + search)     (chat OR Batch API)          (dedupe+validate)    lookup
+Rich roster CSV  ──▶  node data/ingest.mjs  ──▶  characters.json  ──▶  app
+   Prompt 1            derives 7 stats from        (merged + deduped)   cache-first
+ (chat + search)       Power Tier + keywords                            lookup
 ```
+
+The roster CSV carries everything (Role, Powers, Strengths, Weaknesses,
+Signature Abilities, **Power Tier**, Confidence, Cross-Medium Note). The ingest
+script derives the 7 numeric battle stats locally — **no AI step needed for
+stats.** Prompt 2 (`2-profile-generator.md`) is now optional, only for
+hand-refining specific characters' numbers.
+
+### Columns (rich format)
+`Name, Franchise, Medium, Role, Powers, Strengths, Weaknesses, Signature Abilities, Power Tier, Confidence, Cross-Medium Note`
+
+### Power Tier ladder (high → low)
+`Universal · Star · Planet · Continent · Island · City · Building · Wall · Human`
+→ mapped to sim tiers godtier / top / high / mid / low and used to seed stats.
+
+### Ingest
+```bash
+node data/ingest.mjs   # reads data/roster/*.csv -> updates data/characters.json
+```
+Re-run any time you add CSVs. Hand-tuned stats are preserved; new rows get
+derived stats (marked `stats_source:"derived"`). You can also import a CSV
+directly in the admin panel (same derivation, in the browser).
 
 ## Folders
 - `prompts/1-roster-builder.md` — generate the name list (run per slice).

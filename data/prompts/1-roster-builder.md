@@ -1,15 +1,17 @@
 # Prompt 1 — Roster Builder (run in Claude.ai with Web Search ON)
 
-Build the character list. Run this once **per slice** from the slicing plan in
-`data/README.md`. Each run drops ~300 characters. Paste the output code block
-into a new file under `data/roster/` (e.g. `data/roster/one-piece.csv`).
+Builds the character list in the **rich 11-column format** (matches
+`data/roster/battle_simulator_roster_2.csv`). The ingest step
+(`node data/ingest.mjs`) derives the 7 numeric battle stats from the
+**Power Tier** + keywords — so you do **not** need an AI step for stats.
 
-You do **NOT** need to dedupe across runs — the ingest script dedupes
-automatically by normalized `name+franchise`. Just keep each run on-topic.
+Run once **per slice** (see `data/README.md`). Paste each output block into a
+file under `data/roster/` (e.g. `data/roster/one-piece.csv`). Cross-run dupes
+are fine — ingest dedupes by `name+franchise`.
 
 ---
 
-## THE PROMPT — copy everything below, fill the `{...}` slots, paste into Claude
+## THE PROMPT — copy below, fill the `{...}` slots, paste into Claude
 
 ```
 You are building the roster for an anime/cartoon/movie BATTLE SIMULATOR.
@@ -21,27 +23,41 @@ TASK: List {N} of the most popular / iconic characters from: {SLICE}
 MEDIUM SCOPE: anime, manga, cartoon (any animation), movie.
 - NO pure comic-book characters — comic power scaling is broken.
 - Movie versions of any character ARE allowed (use their movie portrayal).
-Prefer characters who fight or have powers, but iconic non-combatants are fine.
 
 OUTPUT RULES — follow EXACTLY:
 - Output ONLY one fenced code block. Nothing before or after it.
-- One character per line, CSV: name,franchise,medium
-    name     = common English name, no titles/honorifics
-    franchise= the series / movie / franchise
-    medium   = exactly one of: anime | manga | cartoon | movie
-- No header row. No numbering. No commentary. No blank lines.
-- No duplicates within this list.
-- If a name contains a comma, wrap the field in double quotes.
+- CSV with this EXACT header row first:
+  Name,Franchise,Medium,Role,Powers,Strengths,Weaknesses,Signature Abilities,Power Tier,Confidence,Cross-Medium Note
+- One character per row after the header.
+    Medium      = anime | manga | cartoon | movie
+    Role        = short label (Hero, Villain, Pirate, Ninja, Mutant, …)
+    Powers      = comma-separated abilities (inside one quoted field)
+    Strengths   = comma-separated (quoted field)
+    Weaknesses  = comma-separated (quoted field)
+    Signature Abilities = comma-separated named moves (quoted field)
+    Power Tier  = EXACTLY one of (high→low):
+                  Universal, Star, Planet, Continent, Island, City, Building, Wall, Human
+    Confidence  = High | Med | Low  (how well-documented their combat feats are)
+    Cross-Medium Note = optional short note (e.g. "cartoon Batman ≠ live-action")
+- Any field containing a comma MUST be wrapped in double quotes.
+- No numbering, no commentary, no blank lines.
+
+POWER TIER GUIDE:
+  Universal = universe/reality scale (Goku, Saitama)
+  Star      = star/solar-system (Femto, Genie)
+  Planet    = planet-buster (Frieza, Thor)
+  Continent = continent/region (Naruto, Aang, The Flash)
+  Island    = island/small-country (Gojo, Luffy, Hulk, Godzilla)
+  City      = city-leveling (Zoro, Iron Man, Gandalf)
+  Building  = building/block (Killua, Wolverine, Predator)
+  Wall      = room/wall (Tanjiro, SpongeBob, Harry Potter)
+  Human     = peak human or below (Levi, John Wick, Batman)
 
 Generate {N} now.
 ```
 
----
+- `{N}` → `200`–`300` per run.
+- `{SLICE}` → one row from the slicing plan in `data/README.md`.
 
-### Slot values
-- `{N}` — `300` is a safe per-run target (fits in one response). Push to `400` if it keeps formatting clean.
-- `{SLICE}` — one entry from the slicing plan, e.g.
-  - `all notable characters from the One Piece franchise`
-  - `the top 300 most popular standalone anime characters ranked roughly #301–#600 on MyAnimeList/AniList, excluding any from One Piece, Naruto, Bleach, or Dragon Ball`
-  - `major characters from popular Western cartoons (Avatar, Ben 10, Teen Titans, etc.)`
-  - `combat-relevant characters from major action/fantasy/sci-fi movie franchises`
+> The older name-only `name,franchise,medium` CSV still imports fine (stats just
+> won't auto-derive without a Power Tier). The rich format above is preferred.
