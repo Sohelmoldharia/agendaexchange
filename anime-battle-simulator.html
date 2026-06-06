@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>⚡ ANIME POWER SCALING — AI BATTLE SIMULATOR</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#06060d;
+    --bg2:#0c0c1c;
+    --neon1:#00f0ff;
+    --neon2:#ff2bd6;
+    --neon3:#ffd400;
+    --good:#3dff8b;
+    --bad:#ff4d5e;
+    --card:#11112400;
+    --panel:rgba(18,18,38,0.72);
+    --line:rgba(120,140,255,0.25);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Arial Narrow","Oswald",system-ui,Arial,sans-serif;
+    background:
+      radial-gradient(900px 600px at 15% -10%, rgba(0,240,255,0.14), transparent 60%),
+      radial-gradient(900px 600px at 85% 110%, rgba(255,43,214,0.16), transparent 60%),
+      linear-gradient(160deg,var(--bg),var(--bg2));
+    color:#eef;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  body.shake{animation:shake .45s linear;}
+  @keyframes shake{
+    0%,100%{transform:translate(0,0)}
+    20%{transform:translate(-6px,3px)}
+    40%{transform:translate(7px,-4px)}
+    60%{transform:translate(-5px,-3px)}
+    80%{transform:translate(5px,4px)}
+  }
+  body.pulse{animation:pulseBg .6s ease;}
+  @keyframes pulseBg{50%{filter:brightness(1.6) saturate(1.4);}}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 16px 80px;}
+
+  h1{
+    text-align:center;
+    font-weight:900;
+    letter-spacing:2px;
+    font-size:clamp(28px,7vw,58px);
+    margin:8px 0 2px;
+    text-transform:uppercase;
+    background:linear-gradient(90deg,var(--neon1),var(--neon3),var(--neon2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 16px rgba(0,240,255,.35));
+  }
+  .sub{text-align:center;color:#9aa3d8;letter-spacing:3px;text-transform:uppercase;font-size:12px;margin-bottom:18px;}
+
+  /* ---------- input ---------- */
+  .matchup{
+    display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch;
+  }
+  .fighter-input{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;padding:16px;
+    backdrop-filter:blur(6px);
+    box-shadow:0 0 30px rgba(0,0,0,.4) inset;
+  }
+  .fighter-input.f1{box-shadow:0 0 26px rgba(0,240,255,.18), 0 0 30px rgba(0,0,0,.4) inset;border-color:rgba(0,240,255,.4);}
+  .fighter-input.f2{box-shadow:0 0 26px rgba(255,43,214,.18), 0 0 30px rgba(0,0,0,.4) inset;border-color:rgba(255,43,214,.4);}
+  .fighter-input label{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b93c9;margin:8px 2px 4px;}
+  .fighter-input input{
+    width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
+    background:#0a0a18;color:#fff;font-size:16px;outline:none;font-family:inherit;
+  }
+  .fighter-input input:focus{border-color:var(--neon1);box-shadow:0 0 0 2px rgba(0,240,255,.2);}
+  .f2 input:focus{border-color:var(--neon2);box-shadow:0 0 0 2px rgba(255,43,214,.2);}
+  .vs-mid{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:clamp(22px,5vw,40px);color:var(--neon3);text-shadow:0 0 18px var(--neon3);}
+
+  .controls{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;}
+  .fight-btn{
+    border:none;cursor:pointer;
+    font-weight:900;letter-spacing:4px;text-transform:uppercase;
+    font-size:clamp(20px,4vw,30px);
+    padding:16px 60px;border-radius:14px;color:#0a0014;
+    background:linear-gradient(90deg,var(--neon3),var(--neon2),var(--neon1));
+    background-size:200% 100%;
+    box-shadow:0 0 26px rgba(255,212,0,.5),0 8px 24px rgba(0,0,0,.5);
+    transition:transform .12s ease, filter .2s ease;
+    animation:flow 4s linear infinite;
+  }
+  @keyframes flow{to{background-position:200% 0;}}
+  .fight-btn:hover{transform:translateY(-2px) scale(1.03);filter:brightness(1.12);}
+  .fight-btn:active{transform:scale(.97);}
+  .fight-btn:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.6);}
+
+  .settings-toggle{background:none;border:1px solid var(--line);color:#9aa3d8;border-radius:20px;padding:6px 16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;}
+  .settings-toggle:hover{color:#fff;border-color:var(--neon1);}
+  .settings{
+    width:100%;max-width:640px;margin-top:4px;display:none;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;
+  }
+  .settings.open{display:block;}
+  .settings .row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
+  .settings .field{flex:1;min-width:150px;}
+  .settings label{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8b93c9;margin-bottom:5px;}
+  .settings select,.settings input{
+    width:100%;padding:9px 10px;border-radius:9px;border:1px solid var(--line);
+    background:#0a0a18;color:#fff;font-size:14px;font-family:inherit;outline:none;
+  }
+  .settings .hint{font-size:11px;color:#727aac;margin-top:10px;line-height:1.5;}
+  .err{color:var(--bad);text-align:center;font-weight:700;min-height:20px;letter-spacing:1px;}
+
+  /* ---------- pre-fight cards ---------- */
+  .stage{margin-top:26px;}
+  .cards{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch;}
+  .ccard{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--line);border-radius:18px;padding:18px 16px;
+    opacity:0;transform:translateX(var(--from,-60px));
+    transition:opacity .6s ease, transform .6s cubic-bezier(.2,.9,.25,1.2), filter .6s ease, box-shadow .4s ease;
+    overflow:hidden;
+  }
+  .ccard.in{opacity:1;transform:translateX(0);}
+  .ccard.left{--from:-80px;border-color:rgba(0,240,255,.45);box-shadow:0 0 34px rgba(0,240,255,.18);}
+  .ccard.right{--from:80px;border-color:rgba(255,43,214,.45);box-shadow:0 0 34px rgba(255,43,214,.18);}
+  .ccard.loser{filter:grayscale(.85) brightness(.6);}
+  .ccard.winner{box-shadow:0 0 46px rgba(255,212,0,.6),0 0 90px rgba(255,212,0,.25);border-color:var(--neon3);}
+  .ccard.winner::after{
+    content:"";position:absolute;inset:-2px;border-radius:18px;pointer-events:none;
+    background:linear-gradient(120deg,transparent 30%,rgba(255,212,0,.18),transparent 70%);
+    background-size:200% 100%;animation:flow 2.2s linear infinite;
+  }
+  .cname{font-weight:900;font-size:clamp(20px,3.6vw,30px);text-transform:uppercase;line-height:1;letter-spacing:1px;}
+  .canime{color:#9aa3d8;font-size:13px;letter-spacing:1px;margin-top:3px;text-transform:uppercase;}
+  .tier{display:inline-block;margin-top:10px;padding:4px 12px;border-radius:20px;font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;}
+  .tier.low{background:#2a3340;color:#9fb0c5;}
+  .tier.mid{background:#1d3a2a;color:#5fe6a0;}
+  .tier.high{background:#3a2d12;color:#ffce4d;}
+  .tier.top{background:#3a1430;color:#ff7ae0;}
+  .tier.godtier{background:linear-gradient(90deg,#ffd400,#ff2bd6);color:#180014;box-shadow:0 0 16px rgba(255,212,0,.5);}
+  .sig{margin-top:10px;font-size:13px;color:#dfe3ff;}
+  .sig b{color:var(--neon1);letter-spacing:1px;}
+  .right .sig b{color:var(--neon2);}
+  .chartbox{margin:12px auto 4px;max-width:300px;}
+  .pw{margin-top:8px;font-size:12.5px;line-height:1.6;}
+  .pw .pro{color:var(--good);}
+  .pw .weak{color:var(--bad);}
+  .pw .h{color:#8b93c9;letter-spacing:1.5px;text-transform:uppercase;font-size:10px;display:block;margin:8px 0 2px;}
+
+  .vsorb{
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:clamp(26px,6vw,52px);
+    color:#fff;
+  }
+  .vsorb span{
+    display:grid;place-items:center;width:clamp(54px,11vw,86px);height:clamp(54px,11vw,86px);border-radius:50%;
+    background:radial-gradient(circle at 40% 30%,#fff,#ffd400 40%,#ff2bd6 75%,#00f0ff);
+    color:#10001a;box-shadow:0 0 30px rgba(255,212,0,.6),0 0 60px rgba(255,43,214,.4);
+    animation:vspulse 1.6s ease-in-out infinite;
+  }
+  @keyframes vspulse{50%{transform:scale(1.12) rotate(6deg);filter:brightness(1.2);}}
+
+  /* ---------- sim overlay ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:50;display:none;
+    align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(4,4,12,.86);backdrop-filter:blur(4px);
+  }
+  .overlay.on{display:flex;}
+  .simtitle{font-weight:900;letter-spacing:3px;text-transform:uppercase;font-size:clamp(16px,3.4vw,26px);color:#cfe;text-align:center;text-shadow:0 0 18px var(--neon1);}
+  .counter{font-weight:900;font-size:clamp(70px,20vw,180px);line-height:1;
+    background:linear-gradient(90deg,var(--neon1),var(--neon3),var(--neon2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 22px rgba(0,240,255,.4));}
+  .counter.flash{animation:cflash .12s linear;}
+  @keyframes cflash{50%{filter:brightness(1.8) drop-shadow(0 0 30px var(--neon3));transform:scale(1.06);}}
+  .livebars{width:min(560px,86vw);margin-top:18px;}
+  .livebar{height:26px;border-radius:13px;background:#16162c;overflow:hidden;border:1px solid var(--line);margin:8px 0;position:relative;}
+  .livebar > i{display:block;height:100%;width:0;transition:width .12s linear;}
+  .livebar.b1 > i{background:linear-gradient(90deg,#007a8a,var(--neon1));}
+  .livebar.b2 > i{background:linear-gradient(90deg,#8a0072,var(--neon2));}
+  .livebar span{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:800;letter-spacing:1px;text-shadow:0 1px 2px #000;}
+  .livebar b{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:900;}
+  .sparks{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+  .spark{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--neon3);box-shadow:0 0 12px var(--neon3);}
+
+  /* ---------- results ---------- */
+  .results{margin-top:26px;display:none;text-align:center;}
+  .results.on{display:block;animation:fadeUp .6s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+  .verdict{font-weight:900;letter-spacing:4px;text-transform:uppercase;font-size:clamp(20px,5vw,40px);
+    background:linear-gradient(90deg,var(--neon3),var(--neon2));-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 18px rgba(255,212,0,.4));margin-bottom:6px;}
+  .score{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;font-weight:900;
+    font-size:clamp(26px,7vw,58px);margin:6px 0;}
+  .score .nm{font-size:clamp(16px,3.4vw,26px);letter-spacing:1px;text-transform:uppercase;}
+  .score .n1{color:var(--neon1);} .score .n2{color:var(--neon2);}
+  .score .num{min-width:1.6em;}
+  .score .dash{color:#fff;opacity:.6;}
+  .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:560px;margin:14px auto 0;}
+  .bd{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;}
+  .bd.left{border-color:rgba(0,240,255,.4);} .bd.right{border-color:rgba(255,43,214,.4);}
+  .bd .t{font-weight:900;text-transform:uppercase;letter-spacing:1px;font-size:14px;margin-bottom:6px;}
+  .bd .wld{display:flex;justify-content:space-around;font-size:13px;}
+  .bd .wld div{display:flex;flex-direction:column;}
+  .bd .wld b{font-size:20px;}
+  .bd .w b{color:var(--good);} .bd .l b{color:var(--bad);} .bd .d b{color:#9aa3d8;}
+  .recap{max-width:620px;margin:18px auto 0;color:#dfe3ff;font-size:15px;line-height:1.6;font-style:italic;}
+  .recap::before{content:"“";} .recap::after{content:"”";}
+  .again{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px;}
+  .again button{border:none;cursor:pointer;font-weight:900;letter-spacing:2px;text-transform:uppercase;font-size:15px;padding:12px 28px;border-radius:12px;transition:transform .12s ease, filter .2s;}
+  .again .rematch{background:linear-gradient(90deg,var(--neon1),#0077ff);color:#02121a;box-shadow:0 0 22px rgba(0,240,255,.4);}
+  .again .newb{background:linear-gradient(90deg,var(--neon2),#7a00ff);color:#16001a;box-shadow:0 0 22px rgba(255,43,214,.4);}
+  .again button:hover{transform:translateY(-2px) scale(1.04);filter:brightness(1.12);}
+
+  .confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:60;pointer-events:none;border-radius:2px;}
+
+  @media(max-width:680px){
+    .matchup,.cards{grid-template-columns:1fr;}
+    .vs-mid,.vsorb{padding:6px 0;}
+    .vsorb span{margin:4px auto;}
+    .breakdown{grid-template-columns:1fr;}
+  }
+  .footer{text-align:center;color:#5a608c;font-size:11px;letter-spacing:1px;margin-top:30px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Anime Power Scaling</h1>
+  <div class="sub">AI Combat Profiler × 100-Battle Monte Carlo Engine</div>
+
+  <!-- INPUT -->
+  <section id="inputArea">
+    <div class="matchup">
+      <div class="fighter-input f1">
+        <label>Fighter 1 — Character</label>
+        <input id="n1" type="text" placeholder="Isagi Yoichi" autocomplete="off"/>
+        <label>Anime</label>
+        <input id="a1" type="text" placeholder="Blue Lock" autocomplete="off"/>
+      </div>
+      <div class="vs-mid">VS</div>
+      <div class="fighter-input f2">
+        <label>Fighter 2 — Character</label>
+        <input id="n2" type="text" placeholder="Gojo Satoru" autocomplete="off"/>
+        <label>Anime</label>
+        <input id="a2" type="text" placeholder="Jujutsu Kaisen" autocomplete="off"/>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="fight-btn" id="fightBtn">FIGHT!</button>
+      <button class="settings-toggle" id="setToggle">⚙ AI Scout Settings</button>
+      <div class="settings" id="settings">
+        <div class="row">
+          <div class="field">
+            <label>Provider</label>
+            <select id="provider">
+              <option value="anthropic-env">Claude (this environment — no key)</option>
+              <option value="anthropic">Claude (with API key)</option>
+              <option value="gemini">Gemini (cheapest, with key)</option>
+              <option value="openai">OpenAI / ChatGPT (with key)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Model</label>
+            <input id="model" type="text" value="claude-haiku-4-5"/>
+          </div>
+        </div>
+        <div class="row" id="keyRow" style="margin-top:12px;display:none;">
+          <div class="field">
+            <label>API Key <span style="color:#727aac">(kept in memory only)</span></label>
+            <input id="apikey" type="password" placeholder="paste key…" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="hint">
+          Default uses Claude Haiku 4.5 — the cheapest current Claude model, ideal for scouting tiny JSON profiles, and it runs key-free inside the artifact preview.
+          Switch to <b>Gemini Flash</b> or <b>GPT-4o-mini</b> for the cheapest paid options. Keys are never stored or persisted.
+        </div>
+      </div>
+      <div class="err" id="errMsg"></div>
+    </div>
+  </section>
+
+  <!-- PRE-FIGHT CARDS -->
+  <section class="stage">
+    <div class="cards" id="cards" style="display:none;">
+      <div class="ccard left" id="card1">
+        <div class="cname" id="c1name"></div>
+        <div class="canime" id="c1anime"></div>
+        <span class="tier" id="c1tier"></span>
+        <div class="sig" id="c1sig"></div>
+        <div class="chartbox"><canvas id="chart1"></canvas></div>
+        <div class="pw" id="c1pw"></div>
+      </div>
+      <div class="vsorb"><span>VS</span></div>
+      <div class="ccard right" id="card2">
+        <div class="cname" id="c2name"></div>
+        <div class="canime" id="c2anime"></div>
+        <span class="tier" id="c2tier"></span>
+        <div class="sig" id="c2sig"></div>
+        <div class="chartbox"><canvas id="chart2"></canvas></div>
+        <div class="pw" id="c2pw"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results" id="results">
+    <div class="verdict" id="verdict"></div>
+    <div class="score">
+      <span class="nm n1" id="s1name"></span>
+      <span class="num n1" id="s1num">0</span>
+      <span class="dash">—</span>
+      <span class="num n2" id="s2num">0</span>
+      <span class="nm n2" id="s2name"></span>
+    </div>
+    <div class="breakdown">
+      <div class="bd left">
+        <div class="t n1" id="b1name"></div>
+        <div class="wld">
+          <div class="w"><b id="b1w">0</b>Wins</div>
+          <div class="l"><b id="b1l">0</b>Losses</div>
+          <div class="d"><b id="b1d">0</b>Draws</div>
+        </div>
+      </div>
+      <div class="bd right">
+        <div class="t n2" id="b2name"></div>
+        <div class="wld">
+          <div class="w"><b id="b2w">0</b>Wins</div>
+          <div class="l"><b id="b2l">0</b>Losses</div>
+          <div class="d"><b id="b2d">0</b>Draws</div>
+        </div>
+      </div>
+    </div>
+    <div class="recap" id="recap"></div>
+    <div class="again">
+      <button class="rematch" id="rematchBtn">⟳ Rematch</button>
+      <button class="newb" id="newBtn">＋ New Battle</button>
+    </div>
+  </section>
+
+  <div class="footer">Stats are AI-estimated for entertainment. Power scaling is a crime against logic. Enjoy responsibly. ⚡</div>
+</div>
+
+<!-- SIM OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="sparks" id="sparks"></div>
+  <div class="simtitle">Simulating 100 Battles…</div>
+  <div class="counter" id="counter">0</div>
+  <div class="livebars">
+    <div class="livebar b1"><span id="lb1name">Fighter 1</span><i id="lb1"></i><b id="lb1n">0</b></div>
+    <div class="livebar b2"><span id="lb2name">Fighter 2</span><i id="lb2"></i><b id="lb2n">0</b></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ANIME POWER SCALING BATTLE SIMULATOR
+   - AI generates combat profiles (strict JSON)
+   - 100-battle Monte Carlo engine in pure JS
+   ============================================================ */
+
+const STAT_KEYS = ["power","speed","durability","technique","intelligence","stamina","range"];
+const STAT_LABELS = ["POWER","SPEED","DURABILITY","TECHNIQUE","INTELLIGENCE","STAMINA","RANGE"];
+
+let state = { f1:null, f2:null, chart1:null, chart2:null };
+
+/* ---------- element helpers ---------- */
+const $ = id => document.getElementById(id);
+
+/* ---------- settings UI ---------- */
+const DEFAULT_MODELS = {
+  "anthropic-env":"claude-haiku-4-5",
+  "anthropic":"claude-haiku-4-5",
+  "gemini":"gemini-2.0-flash",
+  "openai":"gpt-4o-mini"
+};
+$("setToggle").addEventListener("click",()=>$("settings").classList.toggle("open"));
+$("provider").addEventListener("change",e=>{
+  const p = e.target.value;
+  $("model").value = DEFAULT_MODELS[p] || "";
+  $("keyRow").style.display = (p==="anthropic-env") ? "none" : "flex";
+});
+
+/* ============================================================
+   AI PROVIDER ABSTRACTION  —  callLLM(system, prompt) -> text
+   ============================================================ */
+async function callLLM(system, prompt){
+  const provider = $("provider").value;
+  const model = $("model").value.trim();
+  const key = $("apikey").value.trim();
+
+  if(provider==="anthropic-env" || provider==="anthropic"){
+    const headers = {"content-type":"application/json","anthropic-version":"2023-06-01"};
+    if(provider==="anthropic"){
+      if(!key) throw new Error("Add your Anthropic API key in settings.");
+      headers["x-api-key"] = key;
+      headers["anthropic-dangerous-direct-browser-access"] = "true";
+    }
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST", headers,
+      body:JSON.stringify({ model, max_tokens:1000, system, messages:[{role:"user",content:prompt}] })
+    });
+    if(!res.ok) throw new Error("Claude API "+res.status);
+    const data = await res.json();
+    return (data.content||[]).map(b=>b.text||"").join("");
+  }
+
+  if(provider==="gemini"){
+    if(!key) throw new Error("Add your Gemini API key in settings.");
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{
+      method:"POST", headers:{"content-type":"application/json"},
+      body:JSON.stringify({
+        system_instruction:{parts:[{text:system}]},
+        contents:[{role:"user",parts:[{text:prompt}]}],
+        generationConfig:{ responseMimeType:"application/json", maxOutputTokens:1000 }
+      })
+    });
+    if(!res.ok) throw new Error("Gemini API "+res.status);
+    const data = await res.json();
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    return parts.map(p=>p.text||"").join("");
+  }
+
+  if(provider==="openai"){
+    if(!key) throw new Error("Add your OpenAI API key in settings.");
+    const res = await fetch("https://api.openai.com/v1/chat/completions",{
+      method:"POST", headers:{"content-type":"application/json","authorization":"Bearer "+key},
+      body:JSON.stringify({
+        model, max_tokens:1000,
+        response_format:{type:"json_object"},
+        messages:[{role:"system",content:system},{role:"user",content:prompt}]
+      })
+    });
+    if(!res.ok) throw new Error("OpenAI API "+res.status);
+    const data = await res.json();
+    return data?.choices?.[0]?.message?.content || "";
+  }
+  throw new Error("Unknown provider");
+}
+
+/* ============================================================
+   COMBAT PROFILE GENERATION
+   ============================================================ */
+const SYSTEM_PROMPT =
+`You are a rigorous anime power-scaling analyst. You output ONLY raw JSON — no preamble, no explanation, no markdown code fences. Just the JSON object.`;
+
+function buildPrompt(name, anime){
+  return `Generate a combat profile for the anime character "${name}" from "${anime}".
+
+Return STRICT JSON matching EXACTLY this schema (no extra keys, no comments):
+{
+  "name": "string",
+  "anime": "string",
+  "stats": { "power":0, "speed":0, "durability":0, "technique":0, "intelligence":0, "stamina":0, "range":0 },
+  "pros": ["string","string","string"],
+  "weaknesses": ["string","string"],
+  "wildcards": [{ "name":"string", "trigger_chance":0.0, "effect_desc":"string", "stat_boost":0 }],
+  "signature_move": "string",
+  "tier": "low|mid|high|top|godtier"
+}
+
+SCALING RULES (important):
+- Each stat is an INTEGER 0-100. Be HONEST and balanced — do NOT make every stat 95+.
+- A street-level brawler should sit far below a planet/universe-buster. Scale relative to the wider power-scaling community consensus.
+- Give 2 genuine weaknesses that could realistically cost them a fight.
+- 1 to 3 wildcards. trigger_chance is 0.0-1.0 (per turn). stat_boost is 0-30 (temporary).
+- tier must be one of: low, mid, high, top, godtier.
+Output the JSON now.`;
+}
+
+function safeParseProfile(text, fallbackName, fallbackAnime){
+  let t = (text||"").trim();
+  // strip markdown fences if any slipped through
+  t = t.replace(/```json/gi,"").replace(/```/g,"").trim();
+  // grab the outermost JSON object
+  const s = t.indexOf("{"), e = t.lastIndexOf("}");
+  if(s!==-1 && e!==-1) t = t.slice(s,e+1);
+  let obj = JSON.parse(t); // may throw -> caught by caller
+
+  const clamp=(v,lo,hi,d)=>{ v=Number(v); if(!isFinite(v)) v=d; return Math.max(lo,Math.min(hi,Math.round(v))); };
+  const stats={};
+  STAT_KEYS.forEach(k=> stats[k]=clamp(obj.stats?.[k],0,100,50));
+
+  let wilds = Array.isArray(obj.wildcards)?obj.wildcards:[];
+  wilds = wilds.slice(0,3).map(w=>({
+    name: String(w?.name||"Hidden Power"),
+    trigger_chance: Math.max(0,Math.min(1, Number(w?.trigger_chance)||0.1)),
+    effect_desc: String(w?.effect_desc||""),
+    stat_boost: clamp(w?.stat_boost,0,30,8)
+  }));
+  if(!wilds.length) wilds=[{name:"Second Wind",trigger_chance:0.12,effect_desc:"Surges with hidden reserves.",stat_boost:8}];
+
+  const tier = ["low","mid","high","top","godtier"].includes(String(obj.tier||"").toLowerCase())
+    ? String(obj.tier).toLowerCase() : "mid";
+
+  return {
+    name: String(obj.name||fallbackName),
+    anime: String(obj.anime||fallbackAnime),
+    stats,
+    pros: (Array.isArray(obj.pros)?obj.pros:[]).slice(0,3).map(String).filter(Boolean),
+    weaknesses: (Array.isArray(obj.weaknesses)?obj.weaknesses:[]).slice(0,2).map(String).filter(Boolean),
+    wildcards: wilds,
+    signature_move: String(obj.signature_move||"—"),
+    tier
+  };
+}
+
+async function scout(name, anime){
+  const text = await callLLM(SYSTEM_PROMPT, buildPrompt(name,anime));
+  return safeParseProfile(text, name, anime);
+}
+
+/* ============================================================
+   BATTLE SIMULATION ENGINE  (pure JS, client-side)
+   ============================================================ */
+function gaussian(mean, std){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return mean + std*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+// returns "f1" | "f2" | "draw"
+function simulateBattle(A, B){
+  let hpA=100, hpB=100;
+  const sA=A.stats, sB=B.stats;
+
+  // first-strike weighting blends speed + a touch of range
+  const initA = sA.speed*0.85 + sA.range*0.15;
+  const initB = sB.speed*0.85 + sB.range*0.15;
+
+  function strike(atk, def, hpDef, turn){
+    let pw=atk.stats.power, tq=atk.stats.technique;
+    // stamina decay over long fights — low stamina decays faster
+    const decay = Math.max(0.55, 1 - turn*(1 - atk.stats.stamina/100)*0.012);
+    pw*=decay; tq*=decay;
+    // wildcard: temporary boost this turn
+    let boost=0, wc=null;
+    for(const w of atk.wildcards){
+      if(Math.random() < w.trigger_chance){ boost+=w.stat_boost; wc=w; }
+    }
+    pw=Math.min(100,pw+boost); tq=Math.min(100,tq+boost);
+
+    // dodge: defender evades using speed + battle IQ
+    const dodgeChance = Math.max(0, Math.min(0.4,
+      (def.stats.speed - atk.stats.speed)/320 + def.stats.intelligence/700));
+    if(Math.random() < dodgeChance) return {dmg:0, hp:hpDef};
+
+    const offense = pw*0.6 + tq*0.4;
+    // higher intelligence on attacker = more consistent (less self-variance)
+    const variance = 8 - atk.stats.intelligence*0.03;
+    let dmg = (offense - def.stats.durability*0.5)*0.34 + gaussian(0, Math.max(3,variance));
+    dmg = Math.max(1, Math.min(60, dmg));
+    return {dmg, hp: hpDef - dmg};
+  }
+
+  for(let turn=0; turn<50; turn++){
+    // who acts first (probabilistic, ratio based)
+    const aFirst = Math.random() < initA/(initA+initB);
+    const first = aFirst ? "A":"B";
+
+    if(first==="A"){
+      let r=strike(A,B,hpB,turn); hpB=r.hp; if(hpB<=0) return "f1";
+      r=strike(B,A,hpA,turn); hpA=r.hp; if(hpA<=0) return "f2";
+    } else {
+      let r=strike(B,A,hpA,turn); hpA=r.hp; if(hpA<=0) return "f2";
+      r=strike(A,B,hpB,turn); hpB=r.hp; if(hpB<=0) return "f1";
+    }
+  }
+  // turn cap reached -> compare HP
+  if(Math.abs(hpA-hpB) < 0.5) return "draw";
+  return hpA>hpB ? "f1":"f2";
+}
+
+function runMonteCarlo(A,B,n=100){
+  const seq=[];
+  for(let i=0;i<n;i++) seq.push(simulateBattle(A,B));
+  return seq;
+}
+
+/* ============================================================
+   RADAR CHARTS
+   ============================================================ */
+function makeRadar(canvasId, profile, color){
+  const ctx = $(canvasId).getContext("2d");
+  return new Chart(ctx,{
+    type:"radar",
+    data:{
+      labels:STAT_LABELS,
+      datasets:[{
+        data:STAT_KEYS.map(k=>profile.stats[k]),
+        backgroundColor:color.fill,
+        borderColor:color.line,
+        borderWidth:2,
+        pointBackgroundColor:color.line,
+        pointRadius:3
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{legend:{display:false}},
+      scales:{ r:{
+        min:0,max:100,
+        ticks:{display:false,stepSize:25},
+        grid:{color:"rgba(150,160,255,0.18)"},
+        angleLines:{color:"rgba(150,160,255,0.18)"},
+        pointLabels:{color:"#b9c0f0",font:{size:9,weight:"700"}}
+      }},
+      animation:{duration:700}
+    }
+  });
+}
+
+/* ============================================================
+   RENDER PRE-FIGHT CARDS
+   ============================================================ */
+function renderCard(idx, p, color){
+  $(`c${idx}name`).textContent=p.name;
+  $(`c${idx}anime`).textContent=p.anime;
+  const tier=$(`c${idx}tier`); tier.textContent=p.tier; tier.className="tier "+p.tier;
+  $(`c${idx}sig`).innerHTML=`<b>Signature:</b> ${escapeHtml(p.signature_move)}`;
+
+  let html="";
+  if(p.pros.length){ html+=`<span class="h">Strengths</span>`; p.pros.forEach(x=> html+=`<div class="pro">▲ ${escapeHtml(x)}</div>`); }
+  if(p.weaknesses.length){ html+=`<span class="h">Weaknesses</span>`; p.weaknesses.forEach(x=> html+=`<div class="weak">▼ ${escapeHtml(x)}</div>`); }
+  if(p.wildcards.length){ html+=`<span class="h">Wildcards</span>`; p.wildcards.forEach(w=> html+=`<div style="color:#ffd86b">✦ ${escapeHtml(w.name)} <span style="color:#727aac">(${Math.round(w.trigger_chance*100)}%/turn, +${w.stat_boost})</span></div>`); }
+  $(`c${idx}pw`).innerHTML=html;
+
+  if(idx===1){ if(state.chart1) state.chart1.destroy(); state.chart1=makeRadar("chart1",p,color); }
+  else { if(state.chart2) state.chart2.destroy(); state.chart2=makeRadar("chart2",p,color); }
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+/* ============================================================
+   SIM OVERLAY ANIMATION
+   ============================================================ */
+function spawnSparks(){
+  const box=$("sparks"); box.innerHTML="";
+  for(let i=0;i<24;i++){
+    const s=document.createElement("div"); s.className="spark";
+    s.style.left=Math.random()*100+"%"; s.style.top=Math.random()*100+"%";
+    s.style.background=["#ffd400","#00f0ff","#ff2bd6"][i%3];
+    s.style.boxShadow=`0 0 12px ${s.style.background}`;
+    s.animate([
+      {transform:"scale(0)",opacity:0},
+      {transform:"scale(1.6)",opacity:1},
+      {transform:"scale(0)",opacity:0}
+    ],{duration:600+Math.random()*900,iterations:Infinity,delay:Math.random()*800});
+    box.appendChild(s);
+  }
+}
+
+function playSimulation(seq, A, B){
+  return new Promise(resolve=>{
+    $("lb1name").textContent=A.name; $("lb2name").textContent=B.name;
+    $("overlay").classList.add("on"); spawnSparks();
+    const counter=$("counter");
+    let i=0, w1=0, w2=0;
+    const total=seq.length;
+    const DURATION=3000, step=DURATION/total;
+
+    const tick=setInterval(()=>{
+      const r=seq[i];
+      if(r==="f1") w1++; else if(r==="f2") w2++;
+      i++;
+      counter.textContent=i;
+      counter.classList.remove("flash"); void counter.offsetWidth; counter.classList.add("flash");
+      const max=Math.max(w1,w2,1);
+      $("lb1").style.width=(w1/total*100)+"%"; $("lb1n").textContent=w1;
+      $("lb2").style.width=(w2/total*100)+"%"; $("lb2n").textContent=w2;
+
+      if(i%14===0){ document.body.classList.remove("pulse"); void document.body.offsetWidth; document.body.classList.add("pulse"); }
+      if(i>=total){
+        clearInterval(tick);
+        document.body.classList.add("shake");
+        setTimeout(()=>{ document.body.classList.remove("shake","pulse"); $("overlay").classList.remove("on"); resolve(); },550);
+      }
+    }, step);
+  });
+}
+
+/* ============================================================
+   RESULTS
+   ============================================================ */
+function countUp(el, target, dur=1100){
+  const start=performance.now();
+  function frame(t){
+    const k=Math.min(1,(t-start)/dur);
+    el.textContent=Math.round(k*target);
+    if(k<1) requestAnimationFrame(frame); else el.textContent=target;
+  }
+  requestAnimationFrame(frame);
+}
+
+function verdictFor(winnerWins){
+  if(winnerWins>=90) return "TOTAL DOMINATION";
+  if(winnerWins>=65) return "DECISIVE VICTORY";
+  if(winnerWins>=55) return "HARD-FOUGHT WIN";
+  return "COIN FLIP";
+}
+
+function statLead(A,B){
+  // find A's biggest relative advantage and disadvantage
+  let bestK=null,bestD=-1e9, worstK=null,worstD=1e9;
+  for(const k of STAT_KEYS){
+    const d=A.stats[k]-B.stats[k];
+    if(d>bestD){bestD=d;bestK=k;}
+    if(d<worstD){worstD=d;worstK=k;}
+  }
+  return {bestK,bestD,worstK,worstD};
+}
+
+function buildRecap(A,B,w1,w2,d){
+  const winner = w1>=w2 ? A:B, loser = w1>=w2 ? B:A;
+  const wWins = Math.max(w1,w2);
+  const lead = statLead(winner,loser);
+  const margin = Math.abs(w1-w2);
+  const k=lead.bestK, lk=lead.worstK;
+  if(margin===0){
+    return `${A.name} and ${B.name} are scaled almost identically — the engine couldn't separate them across 100 runs. A true coin flip.`;
+  }
+  let line = `${winner.name}'s superior ${k} (${winner.stats[k]} vs ${loser.stats[k]}) `;
+  if(wWins>=90) line += `simply overwhelmed ${loser.name} — there was no path to victory.`;
+  else if(wWins>=65) line += `decided most exchanges, though ${loser.name}'s ${lk} kept a handful of rounds competitive.`;
+  else line += `edged out ${loser.name} in the close ones, where ${loser.name}'s stronger ${lk} (${loser.stats[lk]} vs ${winner.stats[lk]}) nearly flipped the script. ${d} fights ended in a draw.`;
+  return line;
+}
+
+function fireConfetti(){
+  const colors=["#ffd400","#00f0ff","#ff2bd6","#3dff8b","#ffffff"];
+  for(let i=0;i<120;i++){
+    const c=document.createElement("div"); c.className="confetti";
+    c.style.left=Math.random()*100+"vw";
+    c.style.background=colors[i%colors.length];
+    c.style.transform=`rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(c);
+    const fall=3000+Math.random()*2500;
+    c.animate([
+      {transform:`translateY(0) rotate(0)`,opacity:1},
+      {transform:`translateY(${window.innerHeight+60}px) rotate(${Math.random()*720}deg)`,opacity:.9}
+    ],{duration:fall,easing:"cubic-bezier(.2,.6,.4,1)"}).onfinish=()=>c.remove();
+  }
+}
+
+function showResults(seq, A, B){
+  let w1=0,w2=0,d=0;
+  for(const r of seq){ if(r==="f1")w1++; else if(r==="f2")w2++; else d++; }
+
+  $("s1name").textContent=A.name; $("s2name").textContent=B.name;
+  $("b1name").textContent=A.name; $("b2name").textContent=B.name;
+
+  const winnerWins=Math.max(w1,w2);
+  $("verdict").textContent=verdictFor(winnerWins);
+
+  $("results").classList.add("on");
+  countUp($("s1num"),w1); countUp($("s2num"),w2);
+  countUp($("b1w"),w1); countUp($("b1l"),w2); countUp($("b1d"),d);
+  countUp($("b2w"),w2); countUp($("b2l"),w1); countUp($("b2d"),d);
+
+  // winner glow / loser desaturate
+  const c1=$("card1"), c2=$("card2");
+  c1.classList.remove("winner","loser"); c2.classList.remove("winner","loser");
+  if(w1>w2){ c1.classList.add("winner"); c2.classList.add("loser"); fireConfetti(); }
+  else if(w2>w1){ c2.classList.add("winner"); c1.classList.add("loser"); fireConfetti(); }
+
+  $("recap").textContent=buildRecap(A,B,w1,w2,d);
+  $("results").scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+/* ============================================================
+   MAIN FLOW
+   ============================================================ */
+async function startFight(){
+  const n1=$("n1").value.trim()||$("n1").placeholder;
+  const a1=$("a1").value.trim()||$("a1").placeholder;
+  const n2=$("n2").value.trim()||$("n2").placeholder;
+  const a2=$("a2").value.trim()||$("a2").placeholder;
+
+  $("errMsg").textContent="";
+  $("fightBtn").disabled=true;
+  $("fightBtn").textContent="SCOUTING…";
+  $("results").classList.remove("on");
+  $("card1").classList.remove("in","winner","loser");
+  $("card2").classList.remove("in","winner","loser");
+
+  // scout both fighters in parallel (cheap), isolate errors per fighter
+  const [r1,r2] = await Promise.allSettled([ scout(n1,a1), scout(n2,a2) ]);
+
+  if(r1.status!=="fulfilled" || r2.status!=="fulfilled"){
+    let who = r1.status!=="fulfilled" && r2.status!=="fulfilled" ? "either fighter"
+            : r1.status!=="fulfilled" ? n1 : n2;
+    const detail = (r1.reason||r2.reason||{}).message || "";
+    $("errMsg").textContent=`⚠ Couldn't scout ${who}, try again. ${detail}`;
+    $("fightBtn").disabled=false; $("fightBtn").textContent="FIGHT!";
+    return;
+  }
+
+  state.f1=r1.value; state.f2=r2.value;
+
+  // reveal cards
+  $("cards").style.display="grid";
+  renderCard(1,state.f1,{fill:"rgba(0,240,255,0.22)",line:"#00f0ff"});
+  renderCard(2,state.f2,{fill:"rgba(255,43,214,0.22)",line:"#ff2bd6"});
+  requestAnimationFrame(()=>{ setTimeout(()=>{$("card1").classList.add("in");$("card2").classList.add("in");},30); });
+
+  $("fightBtn").textContent="FIGHT!"; $("fightBtn").disabled=false;
+
+  // brief pause to admire cards, then run sim
+  await new Promise(r=>setTimeout(r,1200));
+  await runAndReveal();
+}
+
+async function runAndReveal(){
+  const seq=runMonteCarlo(state.f1,state.f2,100);
+  await playSimulation(seq,state.f1,state.f2);
+  showResults(seq,state.f1,state.f2);
+}
+
+/* rematch: reuse same profiles, re-roll the 100 battles */
+async function rematch(){
+  if(!state.f1||!state.f2) return;
+  $("results").classList.remove("on");
+  $("card1").classList.remove("winner","loser");
+  $("card2").classList.remove("winner","loser");
+  await new Promise(r=>setTimeout(r,200));
+  await runAndReveal();
+}
+
+function newBattle(){
+  $("results").classList.remove("on");
+  $("cards").style.display="none";
+  $("card1").classList.remove("in","winner","loser");
+  $("card2").classList.remove("in","winner","loser");
+  state.f1=state.f2=null;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+$("fightBtn").addEventListener("click",startFight);
+$("rematchBtn").addEventListener("click",rematch);
+$("newBtn").addEventListener("click",newBattle);
+[ "n1","a1","n2","a2" ].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") startFight(); }));
+</script>
+</body>
+</html>
