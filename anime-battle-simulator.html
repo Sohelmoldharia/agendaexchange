@@ -245,6 +245,9 @@ h1 .ac{color:var(--red);}
 .analysis li{font-size:13.5px;line-height:1.6;color:var(--ink);padding-left:16px;position:relative;margin:5px 0;}
 .analysis li::before{content:"›";position:absolute;left:0;color:var(--gold);font-weight:700;}
 .analysis li b{color:var(--gold);font-variant-numeric:tabular-nums;}
+.analysis .abasis{margin-top:11px;padding-top:10px;border-top:1px solid var(--line);font-size:11.5px;line-height:1.6;color:var(--mut);font-style:italic;}
+.analysis .abasis b{color:var(--ink);font-style:normal;}
+.again .rand:hover{border-color:var(--gold);color:var(--gold);}
 
 /* play-by-play */
 .pbptoggle{margin:14px auto 0;display:inline-block;border:1px solid var(--line);background:transparent;color:var(--mut);font-family:var(--disp);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:12px;padding:9px 18px;cursor:pointer;}
@@ -364,6 +367,7 @@ h1 .ac{color:var(--red);}
     <div class="pbp" id="pbp"></div>
     <div class="again">
       <button class="rematch" id="rematchBtn">⟳ Rematch</button>
+      <button class="rand" id="randomBtn2">🎲 Random</button>
       <button class="newb" id="newBtn">＋ New Battle</button>
     </div>
     <div class="sharebar">
@@ -927,7 +931,11 @@ function buildAnalysis(A,B,w1,w2,st){
   if(lAgg.dodge>=2) b.push(`${escapeHtml(lose.name)} dodged <b>${lAgg.dodge.toFixed(1)}</b> hits a fight, but couldn't turn it around.`);
   if(winWins-loseWins<=14) b.push(`Came down to the wire — ~<b>${st.avgTurns.toFixed(0)}</b> turns on average.`);
   else if(winWins>=90) b.push(`A mismatch — fights ended in ~<b>${st.avgTurns.toFixed(0)}</b> turns.`);
-  $("analysis").innerHTML=`<div class="ah">Why ${escapeHtml(win.name)} won</div><ul>${b.slice(0,5).map(x=>`<li>${x}</li>`).join("")}</ul>`;
+  // lead with the power-tier gap if there is one (the headline justification)
+  if(win.power_tier && lose.power_tier && win.power_tier!==lose.power_tier)
+    b.unshift(`Tier gap: <b>${escapeHtml(win.name)} (${escapeHtml(win.power_tier)})</b> outscales ${escapeHtml(lose.name)} (${escapeHtml(lose.power_tier)}).`);
+  const basis=`Based on <b>100</b> simulated fights — computed from each fighter's 7 stats, signature abilities, speed &amp; initiative, and trick (hax) potential. Tap “Show blow-by-blow” for a turn-by-turn fight.`;
+  $("analysis").innerHTML=`<div class="ah">Why ${escapeHtml(win.name)} won</div><ul>${b.slice(0,6).map(x=>`<li>${x}</li>`).join("")}</ul><div class="abasis">${basis}</div>`;
   $("analysis").classList.add("on");
 }
 
@@ -997,6 +1005,7 @@ $("browse").addEventListener("click",e=>{ if(e.target===$("browse")) $("browse")
 document.querySelectorAll(".bc").forEach(b=>b.addEventListener("click",()=>{ browseCorner=+b.dataset.c; document.querySelectorAll(".bc").forEach(x=>x.classList.toggle("on",x===b)); }));
 $("browseSearch").addEventListener("input",e=>renderBrowse(e.target.value));
 $("pbpToggle").addEventListener("click",()=>{ const on=$("pbp").classList.toggle("on"); $("pbpToggle").textContent= on?"📜 Hide blow-by-blow":"📜 Show blow-by-blow"; });
+$("randomBtn2").addEventListener("click",randomBattle);
 
 [ "n1","a1","n2","a2" ].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") startFight(); }));
 // live "did you mean?" as you type the character name
