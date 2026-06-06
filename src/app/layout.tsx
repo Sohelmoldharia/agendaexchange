@@ -4,6 +4,7 @@ import "./globals.css";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { TickerTape } from "@/components/TickerTape";
+import { PathHide } from "@/components/PathHide";
 import { getTapeData } from "@/lib/queries";
 import { BRAND } from "@/lib/constants";
 
@@ -36,10 +37,15 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <Nav />
-        <TickerTape initial={tape} />
+        {/* FANDX chrome — hidden under /anime, which has its own shell. */}
+        <PathHide prefix="/anime">
+          <Nav />
+          <TickerTape initial={tape} />
+        </PathHide>
         <main className="flex-1">{children}</main>
-        <Footer />
+        <PathHide prefix="/anime">
+          <Footer />
+        </PathHide>
       </body>
     </html>
   );
