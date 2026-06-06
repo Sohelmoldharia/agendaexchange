@@ -181,6 +181,62 @@ h1 .ac{color:var(--red);}
 .sharedbanner button{background:var(--ink);color:var(--bg);border:none;font-family:var(--disp);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:12px;padding:9px 16px;cursor:pointer;}
 .sharedbanner button:hover{background:var(--gold);}
 
+/* mini buttons */
+.minirow{display:flex;gap:10px;}
+.minibtn{border:1px solid var(--line);background:transparent;color:var(--mut);font-family:var(--disp);font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:12px;padding:8px 16px;cursor:pointer;}
+.minibtn:hover{border-color:var(--ink);color:var(--ink);}
+
+/* trending */
+.trending{display:none;margin-top:34px;}
+.trending.on{display:block;}
+.thead{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--disp);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:14px;color:var(--ink);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px;}
+.ttotal{color:var(--mut);font-size:11px;letter-spacing:.08em;text-transform:uppercase;}
+.tlist{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:680px){.tlist{grid-template-columns:1fr;}}
+.titem{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);padding:10px 13px;cursor:pointer;font-size:13px;}
+.titem:hover{border-color:var(--gold);}
+.titem .vs{color:var(--mut);font-size:11px;margin:0 4px;}
+.titem .cnt{color:var(--mut);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.titem .ra{color:var(--red);font-weight:600;} .titem .rb{color:var(--blue);font-weight:600;}
+.toplist{display:flex;flex-wrap:wrap;gap:8px;}
+.topchip{background:var(--surface);border:1px solid var(--line);padding:7px 12px;font-size:12px;cursor:pointer;}
+.topchip:hover{border-color:var(--gold);}
+.topchip b{color:var(--gold);font-variant-numeric:tabular-nums;font-family:var(--disp);}
+
+/* tale of the tape */
+.tote{display:none;margin-top:14px;background:var(--surface);border:1px solid var(--line);padding:16px 18px;}
+.tote.on{display:block;}
+.tote .th{text-align:center;font-family:var(--disp);font-weight:600;letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:var(--mut);margin-bottom:14px;}
+.toterow{display:grid;grid-template-columns:34px 1fr 64px 1fr 34px;align-items:center;gap:8px;margin:7px 0;}
+.toterow .va,.toterow .vb{font-family:var(--disp);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums;color:var(--mut);}
+.toterow .va{text-align:right;} .toterow .vb{text-align:left;}
+.toterow .lbl{text-align:center;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);}
+.toterow .barA,.toterow .barB{height:9px;background:#1c1c22;position:relative;}
+.toterow .barA > i{position:absolute;right:0;top:0;height:100%;background:#5a2a2c;}
+.toterow .barB > i{position:absolute;left:0;top:0;height:100%;background:#244a5e;}
+.toterow.la .va{color:var(--ink);} .toterow.la .barA > i{background:var(--red);}
+.toterow.lb .vb{color:var(--ink);} .toterow.lb .barB > i{background:var(--blue);}
+.totepred{text-align:center;margin-top:14px;font-family:var(--disp);letter-spacing:.1em;text-transform:uppercase;font-size:13px;color:var(--gold);}
+
+/* browse modal */
+.bmodal{position:fixed;inset:0;z-index:60;display:none;align-items:flex-start;justify-content:center;background:rgba(8,8,12,.9);padding:30px 16px;}
+.bmodal.on{display:flex;}
+.bsheet{background:var(--bg);border:1px solid var(--line);width:min(820px,100%);max-height:86vh;display:flex;flex-direction:column;}
+.bhead{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);}
+.bhead strong{font-family:var(--disp);letter-spacing:.1em;text-transform:uppercase;font-size:15px;}
+.bcorner{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);}
+.bc{border:1px solid var(--line);background:transparent;color:var(--mut);font-family:var(--disp);font-weight:600;padding:5px 12px;cursor:pointer;text-transform:uppercase;font-size:12px;}
+.bc.red.on{background:var(--red);color:#0c0c0e;border-color:var(--red);}
+.bc.blue.on{background:var(--blue);color:#0c0c0e;border-color:var(--blue);}
+.bclose{background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer;line-height:1;}
+#browseSearch{margin:12px 16px 0;padding:10px 12px;background:#0e0e11;border:1px solid var(--line);color:var(--ink);outline:none;font-family:var(--body);}
+.bgrid{overflow:auto;padding:12px 16px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+.bcard{background:var(--surface);border:1px solid var(--line);padding:9px 11px;cursor:pointer;}
+.bcard:hover{border-color:var(--ink);}
+.bcard .bn{font-weight:600;font-size:13px;}
+.bcard .bf{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
+.bcard .bt{float:right;font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;}
+
 </style>
 </head>
 <body>
@@ -211,8 +267,20 @@ h1 .ac{color:var(--red);}
 
     <div class="controls">
       <button class="fight-btn" id="fightBtn">FIGHT</button>
+      <div class="minirow">
+        <button class="minibtn" id="randomBtn">🎲 Random</button>
+        <button class="minibtn" id="browseBtn">📋 Browse roster</button>
+      </div>
       <div class="err" id="errMsg"></div>
     </div>
+  </section>
+
+  <!-- TRENDING (engagement) -->
+  <section class="trending" id="trending">
+    <div class="thead"><span>🔥 Trending Battles</span><span class="ttotal" id="tTotal"></span></div>
+    <div class="tlist" id="tList"></div>
+    <div class="thead" style="margin-top:18px"><span>🏆 Top Fighters</span><span class="ttotal">by win rate</span></div>
+    <div class="toplist" id="topList"></div>
   </section>
 
   <!-- PRE-FIGHT CARDS -->
@@ -236,6 +304,7 @@ h1 .ac{color:var(--red);}
         <div class="pw" id="c2pw"></div>
       </div>
     </div>
+    <div class="tote" id="tote"></div>
   </section>
 
   <!-- RESULTS -->
@@ -282,6 +351,22 @@ h1 .ac{color:var(--red);}
   <div class="footer">Community-scaled estimates, for fun. Power scaling is a crime against logic — enjoy responsibly.</div>
 </div>
 <canvas id="cardCanvas" width="1200" height="630" style="display:none"></canvas>
+
+<!-- BROWSE ROSTER -->
+<div class="bmodal" id="browse">
+  <div class="bsheet">
+    <div class="bhead">
+      <strong>Browse Roster</strong>
+      <div class="bcorner">Assign to:
+        <button class="bc red on" data-c="1">Red</button>
+        <button class="bc blue" data-c="2">Blue</button>
+      </div>
+      <button class="bclose" id="browseClose">✕</button>
+    </div>
+    <input id="browseSearch" placeholder="Search 301 fighters…" autocomplete="off"/>
+    <div class="bgrid" id="bgrid"></div>
+  </div>
+</div>
 
 <!-- SIM OVERLAY -->
 <div class="overlay" id="overlay">
@@ -578,6 +663,7 @@ function renderResult(A, B, w1, w2, opts={}){
 
   $("recap").textContent=buildRecap(A,B,w1,w2,d);
   LAST={ a:[A.name,A.anime], b:[B.name,B.anime], w:[w1,w2], v:verdictFor(winnerWins) };
+  if(opts.log!==false) postLog(A,B,w1,w2);
   if(opts.scroll!==false) $("results").scrollIntoView({behavior:"smooth",block:"center"});
 }
 function showResults(seq, A, B){
@@ -630,6 +716,7 @@ function revealCards(){
   $("cards").style.display="grid";
   renderCard(1,state.f1,{fill:"rgba(226,59,59,0.16)",line:"#e23b3b"});
   renderCard(2,state.f2,{fill:"rgba(63,134,184,0.18)",line:"#3f86b8"});
+  renderTale(state.f1,state.f2);
   requestAnimationFrame(()=>{ setTimeout(()=>{$("card1").classList.add("in");$("card2").classList.add("in");},30); });
 }
 
@@ -656,6 +743,7 @@ function newBattle(){
   $("card2").classList.remove("in","winner","loser");
   $("sug1").innerHTML=""; $("sug2").innerHTML=""; $("errMsg").textContent="";
   $("sharedBanner").classList.remove("on");
+  $("tote").classList.remove("on"); $("tote").innerHTML="";
   state.f1=state.f2=null;
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -667,43 +755,127 @@ function b64e(o){ return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).r
 function b64d(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(decodeURIComponent(escape(atob(s)))); }
 function shareURL(){ return location.origin+location.pathname+"?r="+b64e(LAST); }
 
-async function shareResult(){
-  if(!LAST) return;
-  const url=shareURL();
-  const text=`${LAST.a[0]} ${LAST.w[0]} — ${LAST.w[1]} ${LAST.b[0]}  ·  ${LAST.v}`;
-  try{
-    if(navigator.share){ await navigator.share({title:"Anime Power Scaling", text:text+" — who wins?", url}); return; }
-  }catch(e){ if(e && e.name==="AbortError") return; }
-  try{ await navigator.clipboard.writeText(url); flashShare("Link copied!"); }
-  catch(e){ prompt("Copy this link:", url); }
-}
 function flashShare(m){ $("shareMsg").textContent=m; setTimeout(()=>$("shareMsg").textContent="",2600); }
 
-function downloadCard(){
-  if(!LAST) return;
+function drawCard(){
   const cv=$("cardCanvas"), x=cv.getContext("2d"), W=1200, H=630;
   const D="700 __px Oswald, Impact, sans-serif", B="500 __px Archivo, Arial, sans-serif";
   const f=(s,px)=> s.replace("__",px);
+  const aWin=LAST.w[0]>=LAST.w[1];
   x.fillStyle="#0c0c0e"; x.fillRect(0,0,W,H);
   x.fillStyle="#e23b3b"; x.fillRect(0,0,W/2,9);
   x.fillStyle="#3f86b8"; x.fillRect(W/2,0,W/2,9);
   x.textAlign="center";
-  x.fillStyle="#83838f"; x.font=f(D,28); x.fillText("ANIME POWER SCALING", W/2, 86);
-  x.fillStyle="#ECEAE2"; x.font=f(D,54);
-  x.fillText(LAST.a[0].toUpperCase().slice(0,22), W/4, 196);
-  x.fillText(LAST.b[0].toUpperCase().slice(0,22), 3*W/4, 196);
+  x.fillStyle="#83838f"; x.font=f(D,28); x.fillText("ANIME POWER SCALING", W/2, 84);
+  x.fillStyle="#ECEAE2"; x.font=f(D,52);
+  x.fillText(LAST.a[0].toUpperCase().slice(0,22), W/4, 190);
+  x.fillText(LAST.b[0].toUpperCase().slice(0,22), 3*W/4, 190);
   x.fillStyle="#83838f"; x.font=f(B,22);
-  x.fillText(LAST.a[1].slice(0,28), W/4, 234); x.fillText(LAST.b[1].slice(0,28), 3*W/4, 234);
+  x.fillText(LAST.a[1].slice(0,28), W/4, 228); x.fillText(LAST.b[1].slice(0,28), 3*W/4, 228);
   x.font=f(D,150);
-  x.fillStyle="#e23b3b"; x.textAlign="right"; x.fillText(LAST.w[0], W/2-55, 430);
+  x.fillStyle=aWin?"#e23b3b":"#6a6a72"; x.textAlign="right"; x.fillText(LAST.w[0], W/2-55, 432);
   x.fillStyle="#3a3a42"; x.textAlign="center"; x.fillText("–", W/2, 420);
-  x.fillStyle="#3f86b8"; x.textAlign="left"; x.fillText(LAST.w[1], W/2+55, 430);
-  x.textAlign="center"; x.fillStyle="#d8a23f"; x.font=f(D,40); x.fillText(LAST.v, W/2, 516);
-  x.fillStyle="#56565f"; x.font=f(B,20); x.fillText("100-battle simulation · "+location.host, W/2, 588);
+  x.fillStyle=!aWin?"#3f86b8":"#6a6a72"; x.textAlign="left"; x.fillText(LAST.w[1], W/2+55, 432);
+  x.textAlign="center"; x.fillStyle="#d8a23f"; x.font=f(D,40); x.fillText(LAST.v, W/2, 512);
+  x.fillStyle="#ECEAE2"; x.font=f(D,30);
+  x.fillText("WINNER: "+(aWin?LAST.a[0]:LAST.b[0]).toUpperCase().slice(0,26), W/2, 556);
+  x.fillStyle="#56565f"; x.font=f(B,19); x.fillText("100-battle simulation · "+location.host, W/2, 596);
+}
+async function shareResult(){
+  if(!LAST) return;
+  const url=shareURL();
+  const text=`${LAST.a[0]} ${LAST.w[0]} — ${LAST.w[1]} ${LAST.b[0]} · ${LAST.v} — who wins?`;
+  // best: share the image card itself (mobile)
+  try{
+    drawCard();
+    const blob=await new Promise(r=>$("cardCanvas").toBlob(r,"image/png"));
+    if(blob){
+      const file=new File([blob],"battle.png",{type:"image/png"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], text:text+"\n"+url}); return;
+      }
+    }
+    if(navigator.share){ await navigator.share({title:"Anime Power Scaling", text, url}); return; }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(url); flashShare("Link copied!"); }
+  catch(e){ prompt("Copy this link:", url); }
+}
+function downloadCard(){
+  if(!LAST) return;
+  drawCard();
   const a=document.createElement("a");
   a.download=`${LAST.a[0]}-vs-${LAST.b[0]}.png`.replace(/[^a-z0-9.\-]+/gi,"_");
-  a.href=cv.toDataURL("image/png"); a.click();
+  a.href=$("cardCanvas").toDataURL("image/png"); a.click();
   flashShare("Card downloaded!");
+}
+
+/* ============================================================
+   TALE OF THE TAPE / RANDOM / BROWSE / TRENDING
+   ============================================================ */
+const SHORT = {power:"PWR",speed:"SPD",durability:"DUR",technique:"TEC",intelligence:"INT",stamina:"STA",range:"RNG"};
+function renderTale(A,B){
+  let aLead=0,bLead=0,rows="";
+  for(const k of STAT_KEYS){
+    const va=A.stats[k], vb=B.stats[k];
+    const cls = va>vb?"la":(vb>va?"lb":"");
+    if(va>vb)aLead++; else if(vb>va)bLead++;
+    rows+=`<div class="toterow ${cls}"><div class="va">${va}</div><div class="barA"><i style="width:${va}%"></i></div>`+
+      `<div class="lbl">${SHORT[k]}</div><div class="barB"><i style="width:${vb}%"></i></div><div class="vb">${vb}</div></div>`;
+  }
+  const lead = aLead>bLead? `${A.name} leads ${aLead} of 7 stats`
+            : bLead>aLead? `${B.name} leads ${bLead} of 7 stats`
+            : `Dead even on paper — ${aLead}-${bLead}`;
+  $("tote").innerHTML=`<div class="th">Tale of the Tape</div>${rows}<div class="totepred">${escapeHtml(lead)}</div>`;
+  $("tote").classList.add("on");
+}
+
+function randomBattle(){
+  if(ROSTER_ARR.length<2) return;
+  let i=Math.floor(Math.random()*ROSTER_ARR.length), j;
+  do{ j=Math.floor(Math.random()*ROSTER_ARR.length); }while(j===i);
+  const A=ROSTER_ARR[i], B=ROSTER_ARR[j];
+  $("n1").value=A.name; $("a1").value=A.anime; $("n2").value=B.name; $("a2").value=B.anime;
+  $("sug1").innerHTML=""; $("sug2").innerHTML="";
+  startFight();
+}
+
+let browseCorner=1;
+function openBrowse(){ $("browse").classList.add("on"); $("browseSearch").value=""; renderBrowse(""); setTimeout(()=>$("browseSearch").focus(),50); }
+function renderBrowse(q){
+  q=q.toLowerCase().trim();
+  const list=ROSTER_ARR.filter(c=>!q||c.name.toLowerCase().includes(q)||(c.anime||"").toLowerCase().includes(q)).slice(0,150);
+  $("bgrid").innerHTML=list.map(c=>`<div class="bcard" data-n="${escapeHtml(c.name)}" data-a="${escapeHtml(c.anime)}"><span class="bt">${escapeHtml(c.power_tier||c.tier||"")}</span><div class="bn">${escapeHtml(c.name)}</div><div class="bf">${escapeHtml(c.anime)}</div></div>`).join("")
+    || `<div style="color:var(--mut);padding:20px;grid-column:1/-1">No matches.</div>`;
+  $("bgrid").querySelectorAll(".bcard").forEach(el=>el.onclick=()=>{
+    $("n"+browseCorner).value=el.dataset.n; $("a"+browseCorner).value=el.dataset.a; $("sug"+browseCorner).innerHTML="";
+    browseCorner = browseCorner===1?2:1;
+    document.querySelectorAll(".bc").forEach(b=>b.classList.toggle("on",+b.dataset.c===browseCorner));
+  });
+}
+
+async function loadTrending(){
+  try{
+    const r=await fetch("/api/trending"); if(!r.ok) return;
+    const t=await r.json();
+    if(!t.matchups || !t.matchups.length) return;
+    $("tTotal").textContent = t.total ? (t.total.toLocaleString()+" battles fought") : "";
+    $("tList").innerHTML=t.matchups.map(m=>`<div class="titem" data-an="${escapeHtml(m.a)}" data-af="${escapeHtml(m.af)}" data-bn="${escapeHtml(m.b)}" data-bf="${escapeHtml(m.bf)}"><span><span class="ra">${escapeHtml(m.a)}</span><span class="vs">vs</span><span class="rb">${escapeHtml(m.b)}</span></span><span class="cnt">${m.count}×</span></div>`).join("");
+    $("tList").querySelectorAll(".titem").forEach(el=>el.onclick=()=>{
+      $("n1").value=el.dataset.an; $("a1").value=el.dataset.af; $("n2").value=el.dataset.bn; $("a2").value=el.dataset.bf;
+      $("sug1").innerHTML=""; $("sug2").innerHTML=""; startFight();
+    });
+    if(t.top && t.top.length){
+      $("topList").innerHTML=t.top.map(c=>`<div class="topchip" data-n="${escapeHtml(c.name)}">${escapeHtml(c.name)} <b>${c.winrate}%</b></div>`).join("");
+      $("topList").querySelectorAll(".topchip").forEach(el=>el.onclick=()=>{
+        const c=ROSTER.get(norm(el.dataset.n)); $("n1").value=el.dataset.n; if(c)$("a1").value=c.anime;
+        window.scrollTo({top:0,behavior:"smooth"});
+      });
+    }
+    $("trending").classList.add("on");
+  }catch(e){}
+}
+function postLog(A,B,w1,w2){
+  try{ fetch("/api/log",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({a:[A.name,A.anime],b:[B.name,B.anime],wa:w1,wb:w2})}).then(()=>setTimeout(loadTrending,400)); }catch(e){}
 }
 
 /* open a shared link -> render that exact result */
@@ -720,7 +892,7 @@ async function loadFromUrl(){
       state.f1=r1.value; state.f2=r2.value;
       revealCards();
       $("card1").classList.add("in"); $("card2").classList.add("in");
-      renderResult(state.f1, state.f2, data.w[0], data.w[1], {animate:false, confetti:false, scroll:true});
+      renderResult(state.f1, state.f2, data.w[0], data.w[1], {animate:false, confetti:false, scroll:true, log:false});
     }
   }catch(e){ /* ignore */ }
   $("fightBtn").disabled=false; $("fightBtn").textContent="FIGHT";
@@ -732,6 +904,12 @@ $("newBtn").addEventListener("click",newBattle);
 $("shareBtn").addEventListener("click",shareResult);
 $("dlBtn").addEventListener("click",downloadCard);
 $("ctaBtn").addEventListener("click",()=>{ history.replaceState({},"",location.pathname); newBattle(); });
+$("randomBtn").addEventListener("click",randomBattle);
+$("browseBtn").addEventListener("click",openBrowse);
+$("browseClose").addEventListener("click",()=>$("browse").classList.remove("on"));
+$("browse").addEventListener("click",e=>{ if(e.target===$("browse")) $("browse").classList.remove("on"); });
+document.querySelectorAll(".bc").forEach(b=>b.addEventListener("click",()=>{ browseCorner=+b.dataset.c; document.querySelectorAll(".bc").forEach(x=>x.classList.toggle("on",x===b)); }));
+$("browseSearch").addEventListener("input",e=>renderBrowse(e.target.value));
 
 [ "n1","a1","n2","a2" ].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") startFight(); }));
 // live "did you mean?" as you type the character name
@@ -745,7 +923,7 @@ $("ctaBtn").addEventListener("click",()=>{ history.replaceState({},"",location.p
   });
 });
 
-loadRoster().then(loadFromUrl);
+loadRoster().then(()=>{ loadFromUrl(); loadTrending(); });
 </script>
 </body>
 </html>

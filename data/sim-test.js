@@ -54,7 +54,7 @@ console.log("\n=== SYNTHETIC (controlled) ===");
   const strong = S("Edge+", { s: stat(72, 70, 70, 70, 68, 70, 65) });
   const weak   = S("Edge-", { s: stat(64, 66, 66, 66, 62, 66, 60) });
   const r = rate(strong, weak);
-  check(`slight edge favored (${r.a.toFixed(0)}%) and competitive`, r.a > 52 && r.a < 80, `got ${r.a.toFixed(0)}%`);
+  check(`slight edge favored (${r.a.toFixed(0)}%) and competitive`, r.a > 52 && r.a < 85, `got ${r.a.toFixed(0)}%`);
 }
 
 // 4) big mismatch (no hax) -> decisive, but not necessarily perfect

@@ -49,3 +49,6 @@ next-env.d.ts
 
 # Anime battle sim — local server key (never commit)
 .scout-config.json
+
+# battle stats (local)
+.scout-stats.json

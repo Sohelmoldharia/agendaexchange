@@ -92,6 +92,29 @@ const currentKey=()=> CFG.PROVIDER==="gemini"?CFG.GEMINI_API_KEY : CFG.PROVIDER=
 const sendJson=(res,code,obj)=>{res.writeHead(code,{"content-type":"application/json"});res.end(JSON.stringify(obj));};
 function readJson(req){return new Promise(resolve=>{let b="";req.on("data",d=>{b+=d;if(b.length>1e5)req.destroy();});req.on("end",()=>{try{resolve(JSON.parse(b||"{}"))}catch(e){resolve(null)}});req.on("error",()=>resolve(null));});}
 
+/* ---------- battle stats (trending + top fighters; engagement) ---------- */
+const STATS_PATH = path.join(ROOT, ".scout-stats.json");
+let STATS = { matchups:{}, chars:{} };
+function loadStats(){
+  try{ STATS=JSON.parse(fs.readFileSync(STATS_PATH,"utf8")); STATS.matchups=STATS.matchups||{}; STATS.chars=STATS.chars||{}; console.log("[stats] loaded"); }
+  catch(e){ STATS={matchups:{},chars:{}}; }
+}
+let statsTimer=null;
+function saveStats(){ clearTimeout(statsTimer); statsTimer=setTimeout(()=>{ try{ const t=STATS_PATH+".tmp"; fs.writeFileSync(t,JSON.stringify(STATS)); fs.renameSync(t,STATS_PATH); }catch(e){} },800); }
+function logBattle(an,af,bn,bf,wa,wb){
+  const idA=slug(an)+"|"+slug(af), idB=slug(bn)+"|"+slug(bf);
+  if(idA==="|"||idB==="|"||idA===idB) return;
+  const key=[idA,idB].sort().join("~"), first=idA<=idB;
+  let m=STATS.matchups[key];
+  if(!m){ m={a:first?an:bn, af:first?af:bf, b:first?bn:an, bf:first?bf:af, count:0, aw:0, bw:0}; STATS.matchups[key]=m; }
+  m.count++;
+  const aWon=wa>wb, bWon=wb>wa;
+  if(first){ if(aWon)m.aw++; if(bWon)m.bw++; } else { if(aWon)m.bw++; if(bWon)m.aw++; }
+  const bump=(nm,won)=>{ const c=STATS.chars[nm]||(STATS.chars[nm]={f:0,w:0}); c.f++; if(won)c.w++; };
+  bump(an,aWon); bump(bn,bWon);
+  saveStats();
+}
+
 /* ---------- validation / clamp ---------- */
 const clamp=(v,lo,hi,d)=>{v=Number(v);if(!isFinite(v))v=d;return Math.max(lo,Math.min(hi,Math.round(v)));};
 function sanitize(o, name, anime){
@@ -248,6 +271,25 @@ const server = http.createServer(async (req,res)=>{
     return sendJson(res,200,{ok:true, hasKey:!!currentKey(), provider:CFG.PROVIDER, model:CFG.MODEL});
   }
 
+  /* ---- battle logging + trending (engagement) ---- */
+  if(req.method==="POST" && url==="/api/log"){
+    const b=await readJson(req); if(!b||!b.a||!b.b) return sendJson(res,400,{error:"bad request"});
+    const an=String(b.a[0]||"").slice(0,60), af=String(b.a[1]||"").slice(0,60);
+    const bn=String(b.b[0]||"").slice(0,60), bf=String(b.b[1]||"").slice(0,60);
+    if(!an||!bn) return sendJson(res,400,{error:"bad request"});
+    logBattle(an,af,bn,bf, parseInt(b.wa)||0, parseInt(b.wb)||0);
+    return sendJson(res,200,{ok:true});
+  }
+  if(req.method==="GET" && url==="/api/trending"){
+    const matchups=Object.values(STATS.matchups).sort((x,y)=>y.count-x.count).slice(0,8)
+      .map(m=>({a:m.a,af:m.af,b:m.b,bf:m.bf,count:m.count,aw:m.aw,bw:m.bw}));
+    const top=Object.entries(STATS.chars).filter(([,c])=>c.f>=5)
+      .map(([name,c])=>({name,fights:c.f,winrate:Math.round(c.w/c.f*100)}))
+      .sort((a,b)=>b.winrate-a.winrate || b.fights-a.fights).slice(0,10);
+    let total=0; for(const m of Object.values(STATS.matchups)) total+=m.count;
+    return sendJson(res,200,{total,matchups,top});
+  }
+
   if(req.method==="POST" && url==="/api/scout"){
     let body=""; req.on("data",d=>{ body+=d; if(body.length>2000) req.destroy(); });
     req.on("end", async ()=>{
@@ -288,6 +330,7 @@ const server = http.createServer(async (req,res)=>{
 
 loadDB();
 loadConfig();
+loadStats();
 server.on("error",err=>{
   if(err.code==="EADDRINUSE"){ console.error(`\n✕ Port ${CFG.PORT} is already in use. Start on another port:\n    PORT=8090 node server.js\n`); process.exit(1); }
   throw err;
