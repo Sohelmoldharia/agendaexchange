@@ -7,8 +7,12 @@ const nextConfig: NextConfig = {
     "better-sqlite3",
   ],
   async redirects() {
-    // Land on the anime directory by default. FANDX still lives at /market,
-    // /portfolio, /stock/*, /login, /admin, etc.
+    // Two apps share this repo. The landing page is switchable:
+    //   LANDING=fandx  → root serves the FANDX app (no redirect)
+    //   (anything else / unset) → root redirects to the anime directory
+    // The other app is always reachable at its own paths either way
+    // (anime at /anime, FANDX at /market, /portfolio, /stock/*, /admin…).
+    if (process.env.LANDING === "fandx") return [];
     return [{ source: "/", destination: "/anime", permanent: false }];
   },
 };

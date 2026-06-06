@@ -5,9 +5,11 @@
   "scripts": {
     "predev": "kill-port 3001 || true",
     "dev": "next dev -p 3001",
+    "dev:fandx": "kill-port 3001 || true && LANDING=fandx next dev -p 3001",
     "build": "next build",
     "prestart": "kill-port 3001 || true",
     "start": "next start -p 3001",
+    "start:fandx": "kill-port 3001 || true && LANDING=fandx next start -p 3001",
     "freeport": "kill-port 3001 || true",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
