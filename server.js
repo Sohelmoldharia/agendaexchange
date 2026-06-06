@@ -15,10 +15,11 @@
 const http = require("http");
 const fs   = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 /* ---------- config (override with env vars) ---------- */
 const CFG = {
-  PORT:              Number(process.env.PORT || 3000),
+  PORT:              Number(process.env.PORT || 8080),
   PROVIDER:          process.env.SCOUT_PROVIDER || "anthropic",      // anthropic | gemini | openai
   MODEL:             process.env.SCOUT_MODEL    || "claude-haiku-4-5",
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
@@ -61,6 +62,35 @@ function saveDB(){                                         // debounced atomic w
     console.log(`[db] saved ${DB.characters.length} characters`);
   }, 400);
 }
+
+/* ---------- runtime config (set from the admin panel, stored locally) ---------- */
+const CFG_PATH = path.join(ROOT, ".scout-config.json");   // gitignored — holds the key
+let ADMIN = { salt:"", hash:"" };
+function loadConfig(){
+  try{
+    const j=JSON.parse(fs.readFileSync(CFG_PATH,"utf8"));
+    if(j.provider) CFG.PROVIDER=j.provider;
+    if(j.model) CFG.MODEL=j.model;
+    if(typeof j.dailyCap==="number") CFG.DAILY_CAP=j.dailyCap;
+    if(typeof j.perIpHourly==="number") CFG.PER_IP_HOURLY=j.perIpHourly;
+    if(j.anthropicKey) CFG.ANTHROPIC_API_KEY=j.anthropicKey;
+    if(j.geminiKey) CFG.GEMINI_API_KEY=j.geminiKey;
+    if(j.openaiKey) CFG.OPENAI_API_KEY=j.openaiKey;
+    if(j.adminSalt&&j.adminHash) ADMIN={salt:j.adminSalt,hash:j.adminHash};
+    console.log("[config] loaded .scout-config.json");
+  }catch(e){ /* none yet */ }
+}
+function saveConfig(){
+  const j={ provider:CFG.PROVIDER, model:CFG.MODEL, dailyCap:CFG.DAILY_CAP, perIpHourly:CFG.PER_IP_HOURLY,
+    anthropicKey:CFG.ANTHROPIC_API_KEY, geminiKey:CFG.GEMINI_API_KEY, openaiKey:CFG.OPENAI_API_KEY,
+    adminSalt:ADMIN.salt, adminHash:ADMIN.hash };
+  const tmp=CFG_PATH+".tmp"; fs.writeFileSync(tmp, JSON.stringify(j,null,2),{mode:0o600}); fs.renameSync(tmp,CFG_PATH);
+}
+const hashPw=(pw,salt)=>crypto.createHash("sha256").update(salt+":"+pw).digest("hex");
+function checkPw(pw){ if(!ADMIN.hash) return false; try{ return crypto.timingSafeEqual(Buffer.from(hashPw(pw,ADMIN.salt)),Buffer.from(ADMIN.hash)); }catch(e){ return false; } }
+const currentKey=()=> CFG.PROVIDER==="gemini"?CFG.GEMINI_API_KEY : CFG.PROVIDER==="openai"?CFG.OPENAI_API_KEY : CFG.ANTHROPIC_API_KEY;
+const sendJson=(res,code,obj)=>{res.writeHead(code,{"content-type":"application/json"});res.end(JSON.stringify(obj));};
+function readJson(req){return new Promise(resolve=>{let b="";req.on("data",d=>{b+=d;if(b.length>1e5)req.destroy();});req.on("end",()=>{try{resolve(JSON.parse(b||"{}"))}catch(e){resolve(null)}});req.on("error",()=>resolve(null));});}
 
 /* ---------- validation / clamp ---------- */
 const clamp=(v,lo,hi,d)=>{v=Number(v);if(!isFinite(v))v=d;return Math.max(lo,Math.min(hi,Math.round(v)));};
@@ -162,10 +192,36 @@ function serveStatic(res, file, type){
 }
 
 /* ---------- request handler ---------- */
-const server = http.createServer((req,res)=>{
+const server = http.createServer(async (req,res)=>{
   const url = req.url.split("?")[0];
 
   if(req.method==="GET" && STATIC[url]){ return serveStatic(res, STATIC[url][0], STATIC[url][1]); }
+
+  /* ---- server AI-key config (driven by the admin panel) ---- */
+  if(req.method==="GET" && url==="/api/config"){
+    const today=new Date().toISOString().slice(0,10);
+    return sendJson(res,200,{hasPassword:!!ADMIN.hash, hasKey:!!currentKey(), provider:CFG.PROVIDER, model:CFG.MODEL, dailyCap:CFG.DAILY_CAP, perIpHourly:CFG.PER_IP_HOURLY, todayUsed:(day&&day.date===today?day.count:0)});
+  }
+  if(req.method==="POST" && url==="/api/config/setup"){
+    const b=await readJson(req); if(!b) return sendJson(res,400,{error:"bad request"});
+    if(ADMIN.hash) return sendJson(res,403,{error:"already set up — use Save with your password (delete .scout-config.json to reset)"});
+    const pw=String(b.password||""); if(pw.length<4) return sendJson(res,400,{error:"password too short (min 4 chars)"});
+    ADMIN.salt=crypto.randomBytes(16).toString("hex"); ADMIN.hash=hashPw(pw,ADMIN.salt); saveConfig();
+    return sendJson(res,200,{ok:true});
+  }
+  if(req.method==="POST" && url==="/api/config"){
+    const b=await readJson(req); if(!b) return sendJson(res,400,{error:"bad request"});
+    if(!ADMIN.hash) return sendJson(res,400,{error:"set an admin password first"});
+    if(!checkPw(String(b.password||""))) return sendJson(res,403,{error:"wrong password"});
+    if(b.provider) CFG.PROVIDER=String(b.provider);
+    if(b.model) CFG.MODEL=String(b.model);
+    if(b.dailyCap!=null&&isFinite(+b.dailyCap)) CFG.DAILY_CAP=Math.max(0,+b.dailyCap|0);
+    if(b.perIpHourly!=null&&isFinite(+b.perIpHourly)) CFG.PER_IP_HOURLY=Math.max(0,+b.perIpHourly|0);
+    const k=String(b.apiKey||"").trim();
+    if(k){ if(CFG.PROVIDER==="gemini")CFG.GEMINI_API_KEY=k; else if(CFG.PROVIDER==="openai")CFG.OPENAI_API_KEY=k; else CFG.ANTHROPIC_API_KEY=k; }
+    saveConfig();
+    return sendJson(res,200,{ok:true, hasKey:!!currentKey(), provider:CFG.PROVIDER, model:CFG.MODEL});
+  }
 
   if(req.method==="POST" && url==="/api/scout"){
     let body=""; req.on("data",d=>{ body+=d; if(body.length>2000) req.destroy(); });
@@ -206,11 +262,16 @@ const server = http.createServer((req,res)=>{
 });
 
 loadDB();
-server.listen(CFG.PORT,()=>{
+loadConfig();
+server.on("error",err=>{
+  if(err.code==="EADDRINUSE"){ console.error(`\n✕ Port ${CFG.PORT} is already in use. Start on another port:\n    PORT=8090 node server.js\n`); process.exit(1); }
+  throw err;
+});
+server.listen(CFG.PORT, "0.0.0.0", ()=>{
   console.log(`\n⚡ Anime Battle Simulator running:  http://localhost:${CFG.PORT}`);
   console.log(`   admin panel:                     http://localhost:${CFG.PORT}/admin`);
   console.log(`   provider=${CFG.PROVIDER} model=${CFG.MODEL}`);
   console.log(`   limits: ${CFG.DAILY_CAP}/day global, ${CFG.PER_IP_HOURLY}/hour per IP`);
-  if(CFG.PROVIDER==="anthropic" && !CFG.ANTHROPIC_API_KEY)
-    console.log(`   ⚠ no ANTHROPIC_API_KEY set — roster lookups work, AI fallback will 502`);
+  if(!currentKey())
+    console.log(`   ⚠ no AI key yet — roster works; set one in the admin panel → 🔑 Server Key`);
 });

@@ -84,6 +84,7 @@
     <span class="pill" id="pDirty">Saved ✓</span>
   </div>
   <div class="grow"></div>
+  <button class="btn warn sm" id="btnServer">🔑 Server Key</button>
   <button class="btn sec sm" id="btnSettings">⚙ AI</button>
   <button class="btn gold sm" id="btnExport">⬇ Export JSON</button>
 </header>
@@ -187,6 +188,35 @@
       <button class="btn sec" id="impCancel">Cancel</button>
       <button class="btn" id="impDo">Import</button>
     </div>
+  </div>
+</div>
+
+<!-- SERVER KEY -->
+<div class="modal" id="serverCfg">
+  <div class="sheet" style="width:min(540px,100%)">
+    <h2>🔑 Server AI Key</h2>
+    <p class="hint">This sets the key the <b>live game</b> uses for unknown characters. It's stored on the server (a local gitignored file), never in the page. Set it once here — no editing code or env vars.</p>
+    <p class="hint" id="scfgStatus">checking…</p>
+    <div id="scfgSetup" style="display:none">
+      <label>Create an admin password (first time only)</label>
+      <input class="in" id="scfgNewPw" type="password" placeholder="choose a password (min 4 chars)"/>
+      <div class="foot"><button class="btn" id="scfgSetupBtn">Set password</button></div>
+    </div>
+    <div id="scfgForm" style="display:none">
+      <label>Admin password</label><input class="in" id="scfgPw" type="password" autocomplete="off"/>
+      <label>Provider</label>
+      <select class="in" id="scfgProvider"><option value="anthropic">Claude</option><option value="gemini">Gemini (cheapest)</option><option value="openai">OpenAI</option></select>
+      <label>Model</label><input class="in" id="scfgModel"/>
+      <label>API Key <span style="color:var(--mut)" id="scfgKeyNote"></span></label>
+      <input class="in" id="scfgKey" type="password" placeholder="paste key (blank = keep current)" autocomplete="off"/>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><label>Daily cap</label><input class="in" id="scfgDaily" type="number" min="0"/></div>
+        <div style="flex:1"><label>Per-IP / hour</label><input class="in" id="scfgHourly" type="number" min="0"/></div>
+      </div>
+      <span class="err" id="scfgErr"></span>
+      <div class="foot"><button class="btn" id="scfgSave">Save to server</button></div>
+    </div>
+    <div class="foot"><button class="btn sec" id="scfgClose">Close</button></div>
   </div>
 </div>
 
@@ -541,6 +571,46 @@ $("btnGenAll").onclick=async()=>{
 
 /* ============================================================ AI PROVIDER (shared) */
 const DEF_MODELS={"anthropic-env":"claude-haiku-4-5","anthropic":"claude-haiku-4-5","gemini":"gemini-2.0-flash","openai":"gpt-4o-mini"};
+
+/* ---- server AI key panel ---- */
+const SRV_MODELS={anthropic:"claude-haiku-4-5",gemini:"gemini-2.0-flash",openai:"gpt-4o-mini"};
+$("btnServer").onclick=openServerCfg;
+$("scfgClose").onclick=()=>$("serverCfg").classList.remove("on");
+$("scfgProvider").onchange=()=>{$("scfgModel").value=SRV_MODELS[$("scfgProvider").value]||"";};
+async function openServerCfg(){
+  $("serverCfg").classList.add("on"); $("scfgErr").textContent=""; $("scfgKey").value=""; $("scfgNewPw").value="";
+  try{
+    const r=await fetch("/api/config"); if(!r.ok) throw 0;
+    const s=await r.json();
+    $("scfgStatus").innerHTML = s.hasKey
+      ? `✓ Server key is set — provider <b>${s.provider}</b>, model <b>${s.model}</b>. AI scouts today: ${s.todayUsed}/${s.dailyCap}.`
+      : `⚠ No server key yet — AI fallback is OFF (roster characters still work).`;
+    if(!s.hasPassword){ $("scfgSetup").style.display=""; $("scfgForm").style.display="none"; }
+    else{
+      $("scfgSetup").style.display="none"; $("scfgForm").style.display="";
+      $("scfgProvider").value=s.provider; $("scfgModel").value=s.model;
+      $("scfgDaily").value=s.dailyCap; $("scfgHourly").value=s.perIpHourly;
+      $("scfgKeyNote").textContent=s.hasKey?"(a key is already saved — leave blank to keep it)":"";
+    }
+  }catch(e){
+    $("scfgStatus").innerHTML="⚠ Can't reach the server. Open this panel via <b>http://localhost:8080/admin</b> (run <code>node server.js</code>), not as a local file.";
+    $("scfgSetup").style.display="none"; $("scfgForm").style.display="none";
+  }
+}
+$("scfgSetupBtn").onclick=async()=>{
+  const r=await fetch("/api/config/setup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password:$("scfgNewPw").value})});
+  const j=await r.json().catch(()=>({}));
+  if(r.ok) openServerCfg(); else alert(j.error||"failed");
+};
+$("scfgSave").onclick=async()=>{
+  $("scfgErr").textContent="";
+  const body={password:$("scfgPw").value,provider:$("scfgProvider").value,model:$("scfgModel").value.trim(),apiKey:$("scfgKey").value.trim(),dailyCap:+$("scfgDaily").value,perIpHourly:+$("scfgHourly").value};
+  const r=await fetch("/api/config",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(r.ok){ $("scfgErr").style.color="var(--good)"; $("scfgErr").textContent="✓ Saved — AI fallback is now live."; $("scfgKey").value=""; setTimeout(openServerCfg,800); }
+  else { $("scfgErr").style.color="var(--bad)"; $("scfgErr").textContent="✕ "+(j.error||"failed"); }
+};
+
 $("btnSettings").onclick=()=>$("settings").classList.add("on");
 $("setClose").onclick=()=>$("settings").classList.remove("on");
 $("provider").onchange=e=>{$("model").value=DEF_MODELS[e.target.value]||"";$("keyWrap").style.display=e.target.value==="anthropic-env"?"none":"";};
