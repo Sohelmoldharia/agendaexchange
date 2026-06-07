@@ -301,6 +301,7 @@ h1 .ac{color:var(--red);}
           <div class="tmlabel">＋ Teammate <button type="button" class="tmx" id="rm1">remove</button></div>
           <input id="n1b" type="text" placeholder="Teammate name" autocomplete="off"/>
           <input id="a1b" type="text" placeholder="Franchise" autocomplete="off" style="margin-top:6px"/>
+          <div class="suggest" id="sug1b"></div>
         </div>
         <button type="button" class="addtm" id="add1">＋ Add teammate (tag team)</button>
         <div class="suggest" id="sug1"></div>
@@ -315,6 +316,7 @@ h1 .ac{color:var(--red);}
           <div class="tmlabel">＋ Teammate <button type="button" class="tmx" id="rm2">remove</button></div>
           <input id="n2b" type="text" placeholder="Teammate name" autocomplete="off"/>
           <input id="a2b" type="text" placeholder="Franchise" autocomplete="off" style="margin-top:6px"/>
+          <div class="suggest" id="sug2b"></div>
         </div>
         <button type="button" class="addtm" id="add2">＋ Add teammate (tag team)</button>
         <div class="suggest" id="sug2"></div>
@@ -745,7 +747,7 @@ function showResults(seq, A, B){
    MAIN FLOW
    ============================================================ */
 async function startFight(){
-  $("errMsg").textContent=""; $("sug1").innerHTML=""; $("sug2").innerHTML="";
+  $("errMsg").textContent=""; $("sug1").innerHTML=""; $("sug2").innerHTML=""; $("sug1b").innerHTML=""; $("sug2b").innerHTML="";
   $("sharedBanner").classList.remove("on");
 
   const sideA=sideFighters(1), sideB=sideFighters(2);
@@ -813,7 +815,7 @@ function newBattle(){
   $("cards").style.display="none";
   $("card1").classList.remove("in","winner","loser");
   $("card2").classList.remove("in","winner","loser");
-  $("sug1").innerHTML=""; $("sug2").innerHTML=""; $("errMsg").textContent="";
+  $("sug1").innerHTML=""; $("sug2").innerHTML=""; $("sug1b").innerHTML=""; $("sug2b").innerHTML=""; $("errMsg").textContent="";
   $("sharedBanner").classList.remove("on");
   $("tote").classList.remove("on"); $("tote").innerHTML="";
   $("analysis").classList.remove("on"); $("analysis").innerHTML="";
@@ -905,7 +907,7 @@ function renderTale(A,B){
 
 function randomBattle(){
   if(ROSTER_ARR.length<2) return;
-  ["1","2"].forEach(k=>{ $("tm"+k).classList.remove("on"); $("add"+k).classList.remove("hidden"); $("n"+k+"b").value=""; $("a"+k+"b").value=""; });
+  ["1","2"].forEach(k=>{ $("tm"+k).classList.remove("on"); $("add"+k).classList.remove("hidden"); $("n"+k+"b").value=""; $("a"+k+"b").value=""; $("sug"+k+"b").innerHTML=""; });
   let i=Math.floor(Math.random()*ROSTER_ARR.length), j;
   do{ j=Math.floor(Math.random()*ROSTER_ARR.length); }while(j===i);
   const A=ROSTER_ARR[i], B=ROSTER_ARR[j];
@@ -1046,7 +1048,7 @@ function buildTeamAnalysis(A,B,w1,w2,st){
   const wAgg=st.agg[wSide], lAgg=st.agg[lSide], winWins=Math.max(w1,w2), loseWins=Math.min(w1,w2);
   const b=[];
   b.push(`<b>${escapeHtml(win.name)}</b> out-damaged the other side <b>${wAgg.dmg.toFixed(0)}</b> to <b>${lAgg.dmg.toFixed(0)}</b> per battle.`);
-  if(wAgg.assist>=0.2) b.push(`Time-stop / control set up <b>${wAgg.assist.toFixed(1)}</b> free assist blows a fight.`);
+  if(wAgg.assist>=0.2) b.push(`Control abilities (freeze / seal / stun) set up <b>${wAgg.assist.toFixed(1)}</b> free assist blows a fight.`);
   if(lAgg.assist>=0.2) b.push(`${escapeHtml(lose.name)} got <b>${lAgg.assist.toFixed(1)}</b> assist blows off — enough to steal <b>${loseWins}%</b> of bouts, not the war.`);
   else if(loseWins>=12) b.push(`${escapeHtml(lose.name)} still took <b>${loseWins}%</b> on variance and clutch tags.`);
   b.push(`Ran ~<b>${st.avgTurns.toFixed(0)}</b> turns; teammates tag in when one falls.`);
@@ -1063,7 +1065,13 @@ function buildTeamPlayByPlay(TA,TB,winnerSide){
     const tn=`<span class="tn">T${ev.t}</span>`; let txt, cls=ev.side;
     const hp=ev.hp!=null?`<span class="hp">(${escapeHtml(ev.def)} ${ev.hp})</span>`:"";
     switch(ev.type){
-      case "assist": txt=`<b>${escapeHtml(ev.ctrl)}</b> freezes time — <span class="k">${escapeHtml(ev.hitter)} smashes ${escapeHtml(ev.def)} for ${ev.dmg}!</span> ${hp}`; cls=ev.side+" gambit"; break;
+      case "assist": {
+        const verb={time:"freezes time on",freeze:"freezes",seal:"seals away",paralyze:"paralyzes",mind:"mind-locks",lockdown:"pins down"}[ev.kind||"lockdown"];
+        txt = (ev.ctrl===ev.hitter)
+          ? `<b>${escapeHtml(ev.ctrl)}</b> <span class="k">${verb} ${escapeHtml(ev.def)} and capitalizes — ${ev.dmg}!</span> ${hp}`
+          : `<b>${escapeHtml(ev.ctrl)}</b> ${verb} ${escapeHtml(ev.def)} — <span class="k">${escapeHtml(ev.hitter)} punishes for ${ev.dmg}!</span> ${hp}`;
+        cls=ev.side+" gambit"; break;
+      }
       case "dodge": txt=`<b>${escapeHtml(ev.def)}</b> slips ${escapeHtml(ev.atk)}'s attack`; break;
       case "counter": txt=`<b>${escapeHtml(ev.def)}</b> counters ${escapeHtml(ev.atk)} for ${ev.dmg}!`; break;
       case "crit": txt=`<b>${escapeHtml(ev.atk)}</b> — CRIT ${ev.dmg}! ${hp}`; cls=ev.side+" crit"; break;
@@ -1111,12 +1119,12 @@ $("pbpToggle").addEventListener("click",()=>{ const on=$("pbp").classList.toggle
 $("randomBtn2").addEventListener("click",randomBattle);
 ["1","2"].forEach(i=>{
   $("add"+i).addEventListener("click",()=>{ $("tm"+i).classList.add("on"); $("add"+i).classList.add("hidden"); $("n"+i+"b").focus(); });
-  $("rm"+i).addEventListener("click",()=>{ $("tm"+i).classList.remove("on"); $("add"+i).classList.remove("hidden"); $("n"+i+"b").value=""; $("a"+i+"b").value=""; });
+  $("rm"+i).addEventListener("click",()=>{ $("tm"+i).classList.remove("on"); $("add"+i).classList.remove("hidden"); $("n"+i+"b").value=""; $("a"+i+"b").value=""; $("sug"+i+"b").innerHTML=""; });
 });
 
 [ "n1","a1","n2","a2" ].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") startFight(); }));
-// live "did you mean?" as you type the character name
-["1","2"].forEach(i=>{
+// live "did you mean?" as you type (primary + teammate fields)
+["1","2","1b","2b"].forEach(i=>{
   let t; $("n"+i).addEventListener("input",()=>{
     clearTimeout(t); t=setTimeout(()=>{
       const nm=$("n"+i).value.trim();

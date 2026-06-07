@@ -70,6 +70,15 @@
   }
   const CONTROL = /time stop|stop time|time manip|rewind|seal|paraly|petrif|freeze|stasis|hypno|mind control|possess/;
   const controlHax = C => CONTROL.test(haxText(C));
+  const controlKind = C => {
+    const t = haxText(C);
+    if (/time stop|stop time|time manip|rewind/.test(t)) return "time";
+    if (/freeze|stasis/.test(t)) return "freeze";
+    if (/seal/.test(t)) return "seal";
+    if (/paraly|petrif/.test(t)) return "paralyze";
+    if (/hypno|mind control|possess/.test(t)) return "mind";
+    return "lockdown";
+  };
   const ehp = c => 90 + c.stats.durability * 0.7 + c.stats.stamina * 0.1;
 
   const newCounts = () => ({ dmg: 0, hits: 0, crit: 0, gambit: 0, dodge: 0, counter: 0, first: 0 });
@@ -214,7 +223,7 @@
         const off = hitter.c.stats.power * 0.55 + hitter.c.stats.technique * 0.45;
         const dmg = clamp(22 + off * 0.22 + ctrlF.c.stats.intelligence * 0.10 + gaussian(0, 6), 14, 50);
         def.hp -= dmg; assist[side]--; counts[me].assist++; counts[me].dmg += dmg;
-        if (events) events.push({ t: turn + 1, type: "assist", side: me, ctrl: ctrlF.c.name, hitter: hitter.c.name, def: def.c.name, dmg: Math.round(dmg), hp: Math.max(0, Math.round(def.hp)) });
+        if (events) events.push({ t: turn + 1, type: "assist", side: me, kind: controlKind(ctrlF.c), ctrl: ctrlF.c.name, hitter: hitter.c.name, def: def.c.name, dmg: Math.round(dmg), hp: Math.max(0, Math.round(def.hp)) });
         if (def.hp <= 0) { counts[foeSide].down++; if (events) events.push({ t: turn + 1, type: "down", side: foeSide, name: def.c.name }); }
         return; // the time-stop is this team's action for the turn
       }
