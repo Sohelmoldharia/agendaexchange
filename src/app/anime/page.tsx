@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { Directory } from "@/components/anime/Directory";
+import { BRAND, SITE_URL } from "@/lib/anime/meta";
 import { getAllSites } from "@/lib/anime/sites";
 
 type StatusFilter = "all" | "legal" | "free" | "blocked" | "shutdown";
 const VALID: StatusFilter[] = ["all", "legal", "free", "blocked", "shutdown"];
+
+export const metadata: Metadata = {
+  title: "The anime site index — every anime & manga site, mapped",
+  description: BRAND.blurb,
+  alternates: { canonical: "/anime" },
+};
 
 export default async function AnimeHome({
   searchParams,
@@ -16,18 +24,32 @@ export default async function AnimeHome({
 
   const sites = getAllSites();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: BRAND.full,
+    description: BRAND.blurb,
+    url: `${SITE_URL}/anime`,
+    isPartOf: { "@type": "WebSite", name: BRAND.name, url: `${SITE_URL}/anime` },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: sites.length,
+      itemListElement: sites.map((s, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: s.name,
+        url: s.url ?? `${SITE_URL}/anime/site/${s.slug}`,
+      })),
+    },
+  };
+
   return (
-    <div className="mx-auto max-w-screen-2xl px-4 pb-16 pt-8">
-      <div className="mb-4">
-        <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-          The anime site index
-        </h1>
-        <p className="mt-2 max-w-2xl text-[15px] text-zinc-400">
-          Every anime streaming, manga, download, and tracking site — official,
-          free, blocked, or shut down. Browse by category, or filter and search.
-        </p>
-      </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Directory sites={sites} initialStatus={initial} />
-    </div>
+    </>
   );
 }

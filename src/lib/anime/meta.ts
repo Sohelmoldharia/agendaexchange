@@ -1,5 +1,9 @@
 import type { SiteKind, SiteStatus } from "./sites";
 
+/** Public base URL for canonical links, sitemap, OG tags. Set in .env. */
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
+
 export const BRAND = {
   name: "Anime Index",
   full: "Anime Index — Every anime site, mapped",

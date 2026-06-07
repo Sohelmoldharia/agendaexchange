@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
-import { KIND_META, STATUS_META } from "@/lib/anime/meta";
+import { KIND_META, STATUS_META, SITE_URL } from "@/lib/anime/meta";
 import { emojiFor, getAllSites, getSite, isBlocked } from "@/lib/anime/sites";
 import { BlockedBadge, StatusBadge } from "@/components/anime/StatusBadge";
 import { SiteRow } from "@/components/anime/SiteRow";
@@ -19,9 +19,14 @@ export async function generateMetadata({
   const { slug } = await params;
   const site = getSite(slug);
   if (!site) return { title: "Not found" };
+  const title = `${site.name} — ${STATUS_META[site.status].label} ${KIND_META[site.kind].label} site`;
+  const url = `${SITE_URL}/anime/site/${site.slug}`;
   return {
-    title: `${site.name} — ${STATUS_META[site.status].label}`,
+    title,
     description: site.blurb,
+    alternates: { canonical: `/anime/site/${site.slug}` },
+    openGraph: { type: "article", title, description: site.blurb, url },
+    twitter: { card: "summary", title, description: site.blurb },
   };
 }
 
@@ -40,8 +45,32 @@ export default async function SiteDetail({
     .filter((s) => s.slug !== site.slug && s.kind === site.kind)
     .slice(0, 8);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Anime Index", item: `${SITE_URL}/anime` },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: kind.label,
+        item: `${SITE_URL}/anime`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: site.name,
+        item: `${SITE_URL}/anime/site/${site.slug}`,
+      },
+    ],
+  };
+
   return (
     <section className="mx-auto max-w-3xl px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link
         href="/anime"
         className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white"

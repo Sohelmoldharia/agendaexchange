@@ -7,7 +7,6 @@ import { isBlocked, regionGroup, type AnimeSite } from "@/lib/anime/sites";
 import { SiteRow } from "./SiteRow";
 
 type StatusFilter = "all" | "legal" | "free" | "blocked" | "shutdown";
-type CategoryFilter = "any" | string; // "any" | section kind
 
 const STATUS_FILTERS: { k: StatusFilter; label: string; dot?: string }[] = [
   { k: "all", label: "All" },
@@ -17,35 +16,33 @@ const STATUS_FILTERS: { k: StatusFilter; label: string; dot?: string }[] = [
   { k: "shutdown", label: "Defunct", dot: "bg-zinc-500" },
 ];
 
-// Each box: streaming is split by region; everything else is one box per kind.
-// `kind` ties a box to the category dropdown; `bar` is its accent color.
-type Section = { key: string; kind: string; label: string; emoji: string; bar: string };
+type Section = { key: string; kind: string; label: string; emoji: string };
 const SECTION_ORDER: Section[] = [
-  { key: "stream:global", kind: "stream", label: "Streaming · Global / EN", emoji: "📺", bar: "border-t-sky-500/60" },
-  { key: "stream:asia", kind: "stream", label: "Streaming · Asia", emoji: "🌏", bar: "border-t-sky-500/60" },
-  { key: "stream:europe", kind: "stream", label: "Streaming · Europe", emoji: "🇪🇺", bar: "border-t-sky-500/60" },
-  { key: "stream:latam", kind: "stream", label: "Streaming · Latin America", emoji: "🌎", bar: "border-t-sky-500/60" },
-  { key: "stream:other", kind: "stream", label: "Streaming · Other regions", emoji: "🌍", bar: "border-t-sky-500/60" },
-  { key: "donghua", kind: "donghua", label: "Donghua", emoji: "🐉", bar: "border-t-rose-500/60" },
-  { key: "manga", kind: "manga", label: "Manga & Reading", emoji: "📖", bar: "border-t-violet-500/60" },
-  { key: "novel", kind: "novel", label: "Light Novels", emoji: "📕", bar: "border-t-amber-500/60" },
-  { key: "download", kind: "download", label: "Downloads & Torrents", emoji: "🧲", bar: "border-t-cyan-500/60" },
-  { key: "schedule", kind: "schedule", label: "Release Schedule", emoji: "🗓️", bar: "border-t-emerald-500/60" },
-  { key: "database", kind: "database", label: "Databases & Trackers", emoji: "🗂️", bar: "border-t-indigo-500/60" },
-  { key: "app", kind: "app", label: "Apps & Tools", emoji: "📱", bar: "border-t-teal-500/60" },
-  { key: "news", kind: "news", label: "News", emoji: "📰", bar: "border-t-fuchsia-500/60" },
+  { key: "stream:global", kind: "stream", label: "Streaming · Global / EN", emoji: "📺" },
+  { key: "stream:asia", kind: "stream", label: "Streaming · Asia", emoji: "🌏" },
+  { key: "stream:europe", kind: "stream", label: "Streaming · Europe", emoji: "🇪🇺" },
+  { key: "stream:latam", kind: "stream", label: "Streaming · Latin America", emoji: "🌎" },
+  { key: "stream:other", kind: "stream", label: "Streaming · Other regions", emoji: "🌍" },
+  { key: "donghua", kind: "donghua", label: "Donghua", emoji: "🐉" },
+  { key: "manga", kind: "manga", label: "Manga & Reading", emoji: "📖" },
+  { key: "novel", kind: "novel", label: "Light Novels", emoji: "📕" },
+  { key: "download", kind: "download", label: "Downloads & Torrents", emoji: "🧲" },
+  { key: "schedule", kind: "schedule", label: "Release Schedule", emoji: "🗓️" },
+  { key: "database", kind: "database", label: "Databases & Trackers", emoji: "🗂️" },
+  { key: "app", kind: "app", label: "Apps & Tools", emoji: "📱" },
+  { key: "news", kind: "news", label: "News", emoji: "📰" },
 ];
 
-const CATEGORY_OPTIONS: { v: string; label: string }[] = [
-  { v: "any", label: "All categories" },
+const CATEGORY_PILLS: { v: string; label: string }[] = [
+  { v: "any", label: "All" },
   { v: "stream", label: "📺 Streaming" },
   { v: "donghua", label: "🐉 Donghua" },
-  { v: "manga", label: "📖 Manga & Reading" },
-  { v: "novel", label: "📕 Light Novels" },
-  { v: "download", label: "🧲 Downloads & Torrents" },
-  { v: "schedule", label: "🗓️ Release Schedule" },
-  { v: "database", label: "🗂️ Databases & Trackers" },
-  { v: "app", label: "📱 Apps & Tools" },
+  { v: "manga", label: "📖 Manga" },
+  { v: "novel", label: "📕 Novels" },
+  { v: "download", label: "🧲 Downloads" },
+  { v: "schedule", label: "🗓️ Schedule" },
+  { v: "database", label: "🗂️ Trackers" },
+  { v: "app", label: "📱 Apps" },
   { v: "news", label: "📰 News" },
 ];
 
@@ -71,7 +68,7 @@ export function Directory({
 }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>(initialStatus);
-  const [category, setCategory] = useState<CategoryFilter>("any");
+  const [category, setCategory] = useState("any");
 
   const q = query.trim().toLowerCase();
   const filtering = q.length > 0 || status !== "all";
@@ -124,55 +121,68 @@ export function Directory({
   );
 
   return (
-    <div>
-      {/* toolbar */}
-      <div className="sticky top-0 z-30 -mx-4 border-b border-white/10 bg-[var(--background)]/95 px-4 py-4 backdrop-blur">
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search 240+ sites — name, feature, region…"
-              className="w-full rounded-lg border border-white/15 bg-black/40 py-3 pl-11 pr-10 text-base text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20"
-              aria-label="Search sites"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200"
-                aria-label="Clear search"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            aria-label="Filter by category"
-            className="rounded-lg border border-white/15 bg-black/40 px-3 py-3 text-sm text-zinc-200 outline-none focus:border-violet-400/60 sm:w-56"
-          >
-            {CATEGORY_OPTIONS.map((c) => (
-              <option key={c.v} value={c.v}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+    <div className="mx-auto max-w-screen-2xl px-4 sm:px-6">
+      {/* hero */}
+      <section className="py-10 text-center sm:py-14">
+        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          The anime site index
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-zinc-400">
+          A curated directory of every anime &amp; manga site — official, free,
+          blocked, or shut down. {counts.total} sites, searchable.
+        </p>
+        <div className="relative mx-auto mt-6 max-w-xl">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, feature, or region…"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-3.5 pl-12 pr-11 text-base text-zinc-100 shadow-lg shadow-black/20 outline-none placeholder:text-zinc-500 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/25"
+            aria-label="Search sites"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200"
+              aria-label="Clear search"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
+      </section>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+      {/* sticky filters */}
+      <div className="sticky top-[57px] z-20 -mx-4 border-y border-white/[0.06] bg-[#0b0b0f]/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {CATEGORY_PILLS.map((c) => (
+            <button
+              key={c.v}
+              type="button"
+              onClick={() => setCategory(c.v)}
+              className={cn(
+                "shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors",
+                category === c.v
+                  ? "border-violet-400/40 bg-violet-500/15 text-violet-100"
+                  : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-zinc-200",
+              )}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.k}
               type="button"
               onClick={() => setStatus(f.k)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors",
                 status === f.k
-                  ? "border-white/30 bg-white/10 text-white"
+                  ? "border-white/25 bg-white/10 text-white"
                   : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-zinc-200",
               )}
             >
@@ -186,21 +196,13 @@ export function Directory({
         </div>
       </div>
 
-      {/* count legend */}
-      <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
-        <Legend dot="bg-emerald-400" n={counts.legal} label="official" />
-        <Legend dot="bg-amber-400" n={counts.free} label="free" />
-        <Legend dot="bg-rose-400" n={counts.blocked} label="blocked somewhere" />
-        <Legend dot="bg-zinc-500" n={counts.shutdown} label="defunct" />
-      </p>
-
-      {/* masonry of category boxes */}
+      {/* results */}
       {filtered.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.02] p-12 text-center text-zinc-500">
+        <div className="my-8 rounded-xl border border-white/[0.08] bg-white/[0.02] p-12 text-center text-zinc-500">
           No sites match those filters.
         </div>
       ) : (
-        <div className="mt-5 gap-4 md:columns-2 xl:columns-3">
+        <div className="mt-6 gap-5 pb-16 md:columns-2 xl:columns-3">
           {visibleSections.map((sec) => {
             const rows = grouped.get(sec.key);
             if (!rows || rows.length === 0) return null;
@@ -247,26 +249,23 @@ function CategoryBox({
   const hidden = visible.length - shown.length;
 
   return (
-    <section
-      className={cn(
-        "mb-4 inline-block w-full break-inside-avoid rounded-lg border border-t-2 border-white/10 bg-white/[0.02]",
-        section.bar,
-      )}
-    >
-      <header className="flex items-center justify-between gap-2 border-b border-white/10 px-3.5 py-2.5">
-        <span className="flex items-center gap-2 text-[15px] font-bold text-white">
-          <span className="text-base">{section.emoji}</span>
+    <section className="mb-5 inline-block w-full break-inside-avoid overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02]">
+      <header className="flex items-center justify-between gap-2 border-b border-white/[0.07] px-4 py-3">
+        <span className="flex items-center gap-2 text-[15px] font-semibold text-white">
+          <span className="grid h-6 w-6 place-items-center rounded-md bg-white/5 text-sm">
+            {section.emoji}
+          </span>
           {section.label}
         </span>
         <span className="text-xs tabular-nums text-zinc-500">{rows.length}</span>
       </header>
       {featureOptions.length >= 3 && (
-        <div className="border-b border-white/10 px-2.5 py-2">
+        <div className="border-b border-white/[0.07] px-3 py-2">
           <select
             value={feature}
             onChange={(e) => setFeature(e.target.value)}
             aria-label={`Filter ${section.label} by feature`}
-            className="w-full rounded border border-white/10 bg-black/30 px-2 py-1.5 text-xs text-zinc-300 outline-none focus:border-white/25"
+            className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-violet-400/50"
           >
             <option value="any">Any feature</option>
             {featureOptions.map((f) => (
@@ -290,21 +289,12 @@ function CategoryBox({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="w-full rounded-md px-2.5 py-2 text-left text-xs font-medium text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+            className="w-full rounded-md px-2.5 py-2 text-left text-xs font-medium text-violet-300/80 hover:bg-white/5 hover:text-violet-200"
           >
             Show all {visible.length} →
           </button>
         )}
       </div>
     </section>
-  );
-}
-
-function Legend({ dot, n, label }: { dot: string; n: number; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={cn("h-2 w-2 rounded-full", dot)} />
-      <span className="tabular-nums text-zinc-300">{n}</span> {label}
-    </span>
   );
 }
